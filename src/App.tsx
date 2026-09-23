@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Song, ThemeType, ChordRequest } from './types/chord';
 import { INITIAL_SONGS } from './data/songs';
@@ -27,46 +29,47 @@ const STORAGE_KEYS = {
 
 export default function App() {
   // Theme state: defaults to 'light' to match the clean white and blue aesthetics of the mockup, but fully supports dark mode!
-  const [theme, setTheme] = useState<ThemeType>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeType;
-    if (saved && ['light', 'dark', 'amoled'].includes(saved)) {
-      return saved;
-    }
-    return 'light';
-  });
+  const [theme, setTheme] = useState<ThemeType>('light');
 
   // Songs state
-  const [songs, setSongs] = useState<Song[]>(() => {
-    let all = [...INITIAL_SONGS];
+  const [songs, setSongs] = useState<Song[]>(INITIAL_SONGS);
+
+  // Favorites state
+  const [favorites, setFavorites] = useState<string[]>([
+    'sampai-jumpa-endank-soekamti',
+    'hati-yang-kau-sakiti-rizky-febian',
+  ]);
+
+  // Read stored preferences on client mount to prevent SSR hydration mismatches
+  useEffect(() => {
     try {
+      const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeType;
+      if (savedTheme && ['light', 'dark', 'amoled'].includes(savedTheme)) {
+        setTheme(savedTheme);
+      }
+
+      let all = [...INITIAL_SONGS];
       const savedCustom = localStorage.getItem(STORAGE_KEYS.CUSTOM_SONGS);
       if (savedCustom) {
         const parsed: Song[] = JSON.parse(savedCustom);
         all = [...parsed, ...all];
       }
-      // Merge any favorite songs cached offline
       const cachedFavorites = getOfflineFavoriteSongs();
       if (cachedFavorites.length > 0) {
         const existingIds = new Set(all.map((s) => s.id));
         const missingFavorites = cachedFavorites.filter((s) => !existingIds.has(s.id));
         all = [...all, ...missingFavorites];
       }
-    } catch (e) {
-      console.error('Error loading songs:', e);
-    }
-    return all;
-  });
+      setSongs(all);
 
-  // Favorites state
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-      if (saved) return JSON.parse(saved);
+      const savedFavs = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
     } catch (e) {
-      console.error('Error loading favorites:', e);
+      console.error('Error loading client state:', e);
     }
-    return ['sampai-jumpa-endank-soekamti', 'hati-yang-kau-sakiti-rizky-febian'];
-  });
+  }, []);
 
   // Navigation tab: 'home' | 'catalog' | 'artists'
   const [currentTab, setCurrentTab] = useState<'home' | 'catalog' | 'artists'>('home');

@@ -26,31 +26,31 @@ export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
       <defs>
         {/* Outer pick 3D radial gradient */}
         <radialGradient id="pcPickSurface" cx="45%" cy="35%" r="65%">
-          <stop offset="0%" stop-color="#FF8A24" />
-          <stop offset="55%" stop-color="#F97316" />
-          <stop offset="85%" stop-color="#EA580C" />
-          <stop offset="100%" stop-color="#C2410C" />
+          <stop offset="0%" stopColor="#FF8A24" />
+          <stop offset="55%" stopColor="#F97316" />
+          <stop offset="85%" stopColor="#EA580C" />
+          <stop offset="100%" stopColor="#C2410C" />
         </radialGradient>
 
         {/* Rim bezel highlight */}
         <linearGradient id="pcBezelGleam" x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%" stop-color="#FED7AA" stop-opacity="0.8" />
-          <stop offset="35%" stop-color="#FDBA74" stop-opacity="0.2" />
-          <stop offset="70%" stop-color="#9A3412" stop-opacity="0.3" />
-          <stop offset="100%" stop-color="#7C2D12" stop-opacity="0.6" />
+          <stop offset="0%" stopColor="#FED7AA" stopOpacity="0.8" />
+          <stop offset="35%" stopColor="#FDBA74" stopOpacity="0.2" />
+          <stop offset="70%" stopColor="#9A3412" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#7C2D12" stopOpacity="0.6" />
         </linearGradient>
 
         {/* Inner orange stripes gradient */}
         <linearGradient id="pcStripeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#EA580C" />
-          <stop offset="50%" stop-color="#F97316" />
-          <stop offset="100%" stop-color="#EA580C" />
+          <stop offset="0%" stopColor="#EA580C" />
+          <stop offset="50%" stopColor="#F97316" />
+          <stop offset="100%" stopColor="#EA580C" />
         </linearGradient>
 
         {showShadow && (
           <filter id="pcDropShadow" x="-10%" y="-8%" width="125%" height="125%">
-            <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000000" flood-opacity="0.18" />
-            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#7C2D12" flood-opacity="0.15" />
+            <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#000000" floodOpacity="0.18" />
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#7C2D12" floodOpacity="0.15" />
           </filter>
         )}
       </defs>
@@ -79,7 +79,7 @@ export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
            C 62 55 156 23 256 23 Z"
         fill="none"
         stroke="url(#pcBezelGleam)"
-        stroke-width="5"
+        strokeWidth="5"
       />
 
       {/* White Inner Badge */}
@@ -105,8 +105,8 @@ export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
            C 295 128 330 142 360 170"
         fill="none"
         stroke="url(#pcStripeGrad)"
-        stroke-width="35"
-        stroke-linecap="round"
+        strokeWidth="35"
+        strokeLinecap="round"
       />
 
       {/* Lower Orange Curved Bar */}
@@ -116,8 +116,8 @@ export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
            C 293 205 326 218 354 245"
         fill="none"
         stroke="url(#pcStripeGrad)"
-        stroke-width="35"
-        stroke-linecap="round"
+        strokeWidth="35"
+        strokeLinecap="round"
       />
     </svg>
   );
