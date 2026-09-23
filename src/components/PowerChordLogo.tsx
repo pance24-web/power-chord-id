@@ -1,0 +1,124 @@
+import React from 'react';
+
+interface PowerChordLogoProps {
+  size?: number | string;
+  className?: string;
+  showShadow?: boolean;
+}
+
+export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
+  size = 36,
+  className = '',
+  showShadow = true,
+}) => {
+  const pixelSize = typeof size === 'number' ? `${size}px` : size;
+
+  return (
+    <svg
+      viewBox="0 0 512 512"
+      width={pixelSize}
+      height={pixelSize}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 select-none ${className}`}
+      aria-label="PowerChord Logo"
+    >
+      <defs>
+        {/* Outer pick 3D radial gradient */}
+        <radialGradient id="pcPickSurface" cx="45%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#FF8A24" />
+          <stop offset="55%" stop-color="#F97316" />
+          <stop offset="85%" stop-color="#EA580C" />
+          <stop offset="100%" stop-color="#C2410C" />
+        </radialGradient>
+
+        {/* Rim bezel highlight */}
+        <linearGradient id="pcBezelGleam" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stop-color="#FED7AA" stop-opacity="0.8" />
+          <stop offset="35%" stop-color="#FDBA74" stop-opacity="0.2" />
+          <stop offset="70%" stop-color="#9A3412" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="#7C2D12" stop-opacity="0.6" />
+        </linearGradient>
+
+        {/* Inner orange stripes gradient */}
+        <linearGradient id="pcStripeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#EA580C" />
+          <stop offset="50%" stop-color="#F97316" />
+          <stop offset="100%" stop-color="#EA580C" />
+        </linearGradient>
+
+        {showShadow && (
+          <filter id="pcDropShadow" x="-10%" y="-8%" width="125%" height="125%">
+            <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000000" flood-opacity="0.18" />
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#7C2D12" flood-opacity="0.15" />
+          </filter>
+        )}
+      </defs>
+
+      {/* Pick Outer Body */}
+      <path
+        d="M 256 22
+           C 358 22 452 54 472 118
+           C 490 178 430 310 310 435
+           C 285 461 268 486 256 486
+           C 244 486 227 461 202 435
+           C 82 310 22 178 40 118
+           C 60 54 154 22 256 22 Z"
+        fill="url(#pcPickSurface)"
+        filter={showShadow ? 'url(#pcDropShadow)' : undefined}
+      />
+
+      {/* Subtle Rim Bevel */}
+      <path
+        d="M 256 23
+           C 356 23 450 55 470 118
+           C 488 177 428 308 309 433
+           C 284 459 267 483 256 483
+           C 245 483 228 459 203 433
+           C 84 308 24 177 42 118
+           C 62 55 156 23 256 23 Z"
+        fill="none"
+        stroke="url(#pcBezelGleam)"
+        stroke-width="5"
+      />
+
+      {/* White Inner Badge */}
+      <path
+        d="M 124 152
+           C 114 195 120 240 146 292
+           C 152 305 165 313 180 310
+           C 208 300 232 295 256 295
+           C 280 295 304 300 332 310
+           C 347 313 360 305 366 292
+           C 392 240 398 195 388 152
+           C 382 128 366 108 342 94
+           C 318 80 288 72 256 72
+           C 224 72 194 80 170 94
+           C 146 108 130 128 124 152 Z"
+        fill="#FFFFFF"
+      />
+
+      {/* Upper Orange Curved Bar */}
+      <path
+        d="M 152 170
+           C 182 142 217 128 256 128
+           C 295 128 330 142 360 170"
+        fill="none"
+        stroke="url(#pcStripeGrad)"
+        stroke-width="35"
+        stroke-linecap="round"
+      />
+
+      {/* Lower Orange Curved Bar */}
+      <path
+        d="M 158 245
+           C 186 218 219 205 256 205
+           C 293 205 326 218 354 245"
+        fill="none"
+        stroke="url(#pcStripeGrad)"
+        stroke-width="35"
+        stroke-linecap="round"
+      />
+    </svg>
+  );
+};

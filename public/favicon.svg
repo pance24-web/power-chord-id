@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none">
+  <defs>
+    <radialGradient id="favSurface" cx="45%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A24" />
+      <stop offset="60%" stop-color="#F97316" />
+      <stop offset="90%" stop-color="#EA580C" />
+      <stop offset="100%" stop-color="#C2410C" />
+    </radialGradient>
+    <linearGradient id="favStripe" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EA580C" />
+      <stop offset="50%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+  </defs>
+
+  <path
+    d="M 256 22
+       C 358 22 452 54 472 118
+       C 490 178 430 310 310 435
+       C 285 461 268 486 256 486
+       C 244 486 227 461 202 435
+       C 82 310 22 178 40 118
+       C 60 54 154 22 256 22 Z"
+    fill="url(#favSurface)"
+  />
+
+  <path
+    d="M 124 152
+       C 114 195 120 240 146 292
+       C 152 305 165 313 180 310
+       C 208 300 232 295 256 295
+       C 280 295 304 300 332 310
+       C 347 313 360 305 366 292
+       C 392 240 398 195 388 152
+       C 382 128 366 108 342 94
+       C 318 80 288 72 256 72
+       C 224 72 194 80 170 94
+       C 146 108 130 128 124 152 Z"
+    fill="#FFFFFF"
+  />
+
+  <path
+    d="M 152 170
+       C 182 142 217 128 256 128
+       C 295 128 330 142 360 170"
+    fill="none"
+    stroke="url(#favStripe)"
+    stroke-width="38"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M 158 245
+       C 186 218 219 205 256 205
+       C 293 205 326 218 354 245"
+    fill="none"
+    stroke="url(#favStripe)"
+    stroke-width="38"
+    stroke-linecap="round"
+  />
+</svg>

@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant amoled (&:where(.amoled, .amoled *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  html {
+    color-scheme: light;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* Light Mode Specific Enhancements */
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Dark Mode Specific Enhancements: Deep Obsidian Slate */
+html.dark:not(.amoled) body {
+  background-color: #0b0f19;
+  color: #f8fafc;
+}
+
+/* AMOLED Mode Specific Enhancements: Pitch Black */
+html.amoled body {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.amoled .dark\:bg-neutral-900,
+html.amoled .dark\:bg-slate-900 {
+  background-color: #080808 !important;
+}
+
+html.amoled .dark\:border-neutral-800,
+html.amoled .dark\:border-slate-800 {
+  border-color: #1f1f23 !important;
+}
+
+html.amoled .dark\:bg-neutral-800,
+html.amoled .dark\:bg-slate-800 {
+  background-color: #141416 !important;
+}
+
+.font-chord {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+}
+
+
+/* Print styling for clean chord sheet printouts */
+@media print {
+  header, nav, footer, .no-print, button, .sticky-toolbar, .floating-controls {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt !important;
+  }
+
+  .chord-sheet-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .chord-badge {
+    color: #b45309 !important;
+    font-weight: bold !important;
+    background: transparent !important;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5);
+}
+

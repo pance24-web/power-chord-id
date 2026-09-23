@@ -1,0 +1,6 @@
+{
+  "name": "PowerChord - Cari Chord Lagu Favoritmu",
+  "description": "Temukan chord lagu dari berbagai genre dan artis favoritmu. Dilengkapi transpose kunci, capo, autoscroll, diagram kunci gitar, dan mode gelap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
