@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Song } from '../types/chord';
 import { SongCard } from './SongCard';
-import { Search, Filter, Music, Heart, SortAsc } from 'lucide-react';
+import { Search, Filter, Music, Heart, ArrowUpDown } from 'lucide-react';
+
+export type SortOption = 'recent' | 'alphabetical' | 'artist';
 
 interface SongListProps {
   songs: Song[];
@@ -26,6 +28,7 @@ export const SongList: React.FC<SongListProps> = ({
   const [selectedGenre, setSelectedGenre] = useState<string>('Semua');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('Semua');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(filterFavoritesOnly);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   // Extract unique genres
   const genres = useMemo(() => {
@@ -34,7 +37,7 @@ export const SongList: React.FC<SongListProps> = ({
   }, [songs]);
 
   const filteredSongs = useMemo(() => {
-    return songs.filter((song) => {
+    const filtered = songs.filter((song) => {
       const q = search.toLowerCase();
       const matchSearch =
         song.title.toLowerCase().includes(q) ||
@@ -47,7 +50,27 @@ export const SongList: React.FC<SongListProps> = ({
 
       return matchSearch && matchGenre && matchDiff && matchFav;
     });
-  }, [songs, search, selectedGenre, selectedDifficulty, showFavoritesOnly, favorites]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'alphabetical') {
+        return a.title.localeCompare(b.title, 'id', { sensitivity: 'base' });
+      }
+      if (sortBy === 'artist') {
+        const artistCompare = a.artist.localeCompare(b.artist, 'id', { sensitivity: 'base' });
+        return artistCompare !== 0
+          ? artistCompare
+          : a.title.localeCompare(b.title, 'id', { sensitivity: 'base' });
+      }
+      // 'recent' (Recently Added)
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeA !== timeB) return timeB - timeA;
+      // Prioritize user's custom created songs, then keep default catalog order
+      if (a.isCustom && !b.isCustom) return -1;
+      if (!a.isCustom && b.isCustom) return 1;
+      return 0;
+    });
+  }, [songs, search, selectedGenre, selectedDifficulty, showFavoritesOnly, favorites, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -66,10 +89,34 @@ export const SongList: React.FC<SongListProps> = ({
             />
           </div>
 
+          {/* Sort Dropdown Filter */}
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shrink-0 focus-within:ring-2 focus-within:ring-amber-500">
+            <ArrowUpDown className="w-4 h-4 text-amber-500 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-bold text-slate-400 leading-none mb-0.5">Urutkan</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-hidden cursor-pointer pr-1"
+                aria-label="Urutkan lagu"
+              >
+                <option value="recent" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                  Terbaru (Recently Added)
+                </option>
+                <option value="alphabetical" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                  Judul Lagu (Alphabetical A-Z)
+                </option>
+                <option value="artist" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                  Nama Artis (Artist Name)
+                </option>
+              </select>
+            </div>
+          </div>
+
           {/* Favorites filter toggle */}
           <button
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
               showFavoritesOnly
                 ? 'bg-rose-500 text-white shadow-xs'
                 : 'bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-rose-500'
