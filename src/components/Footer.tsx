@@ -1,107 +1,82 @@
 import React from 'react';
-import { Instagram, Youtube, Music } from 'lucide-react';
 import { PowerChordLogo } from './PowerChordLogo';
+import { Heart, Github, Music2, ShieldCheck, Zap } from 'lucide-react';
 
 interface FooterProps {
+  onOpenDictionary: () => void;
+  onOpenTuner: () => void;
+  onOpenRequest: () => void;
   onNavigateHome: () => void;
-  onNavigateCatalog: () => void;
-  onNavigateArtists: () => void;
-  onOpenRequestModal: () => void;
-  onOpenPrivacy?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
+  onOpenDictionary,
+  onOpenTuner,
+  onOpenRequest,
   onNavigateHome,
-  onNavigateCatalog,
-  onNavigateArtists,
-  onOpenRequestModal,
 }) => {
   return (
-    <footer className="mt-auto bg-slate-900 dark:bg-[#070B14] amoled:bg-black text-slate-400 py-10 border-t border-slate-800 amoled:border-neutral-900 text-xs no-print">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Logo & Brand */}
-          <button
-            onClick={onNavigateHome}
-            className="flex items-center gap-2.5 group cursor-pointer"
-          >
-            <div className="w-8 h-8 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <PowerChordLogo size={30} />
+    <footer className="mt-20 border-t border-slate-200 dark:border-slate-800/80 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xs no-print">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          {/* Brand info */}
+          <div className="md:col-span-2 space-y-3">
+            <div className="cursor-pointer" onClick={onNavigateHome}>
+              <PowerChordLogo size="sm" />
             </div>
-            <span className="text-lg font-black tracking-tight text-white">
-              Power<span className="text-orange-400">Chord</span>
-            </span>
-          </button>
-
-          {/* Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-slate-300 font-medium">
-            <button
-              onClick={onNavigateHome}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Beranda
-            </button>
-            <button
-              onClick={onNavigateCatalog}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Katalog
-            </button>
-            <button
-              onClick={onNavigateArtists}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Artis
-            </button>
-            <button
-              onClick={onOpenRequestModal}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Request Chord
-            </button>
-            <span className="hover:text-white transition-colors cursor-pointer">
-              Privasi
-            </span>
-            <span className="hover:text-white transition-colors cursor-pointer">
-              DMCA
-            </span>
-            <span className="hover:text-white transition-colors cursor-pointer">
-              Tentang
-            </span>
+            <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
+              Platform katalog chord lagu dan lirik terlengkap dengan fitur transpose nada otomatis, autoscroll presisi, diagram kunci gitar interaktif, dan dukungan offline PWA.
+            </p>
+            <div className="flex items-center gap-3 pt-2 text-xs text-slate-400">
+              <span className="flex items-center gap-1">
+                <Zap className="w-3.5 h-3.5 text-amber-500" /> Cepat &amp; Ringan
+              </span>
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Akses Offline
+              </span>
+            </div>
           </div>
 
-          {/* Social Icons */}
-          <div className="flex items-center gap-3 text-slate-400">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              className="p-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a
-              href="https://youtube.com"
-              target="_blank"
-              rel="noreferrer"
-              className="p-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition-colors"
-              aria-label="YouTube"
-            >
-              <Youtube className="w-4 h-4" />
-            </a>
-            <div
-              className="p-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Discord"
-            >
-              <Music className="w-4 h-4" />
-            </div>
+          {/* Quick Features */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              Fitur Gitar
+            </h4>
+            <ul className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <li>
+                <button onClick={onOpenTuner} className="hover:text-amber-500 cursor-pointer">
+                  Tuner Gitar Virtual
+                </button>
+              </li>
+              <li>
+                <button onClick={onOpenDictionary} className="hover:text-amber-500 cursor-pointer">
+                  Kamus Kunci Lengkap
+                </button>
+              </li>
+              <li>
+                <button onClick={onOpenRequest} className="hover:text-amber-500 cursor-pointer">
+                  Request Chord Baru
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Legal & App info */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              Tentang
+            </h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Semua materi lirik dan chord adalah hak cipta dari masing-masing pencipta lagu, musisi, dan label musik bersangkutan.
+            </p>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="text-center pt-4 border-t border-slate-800/80 text-slate-500">
-          © 2025 PowerChord. Semua hak dilindungi.
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>&copy; {new Date().getFullYear()} PowerChord. All rights reserved.</p>
+          <p className="flex items-center gap-1">
+            Dibuat untuk musisi Indonesia &amp; dunia
+          </p>
         </div>
       </div>
     </footer>

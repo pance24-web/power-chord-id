@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 
-/**
- * Hook to monitor online/offline network connectivity status
- */
-export function useOnlineStatus() {
+export function useOnlineStatus(): boolean {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
-    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
       return navigator.onLine;
     }
     return true;

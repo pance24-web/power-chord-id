@@ -1,11 +1,4 @@
-import { Song } from '../types/chord';
-
-const STORAGE_KEYS = {
-  FAVORITE_IDS: 'powerchord_favorites',
-  OFFLINE_FAVORITE_SONGS: 'powerchord_offline_favorite_songs',
-  OFFLINE_RECENT_SONGS: 'powerchord_offline_recent_songs',
-  LAST_OFFLINE_VIEW: 'powerchord_last_viewed_song_id',
-};
+import { Song, STORAGE_KEYS } from '../types/chord';
 
 /**
  * Retrieve full Song objects for favorite songs cached in localStorage
@@ -15,10 +8,8 @@ export function getOfflineFavoriteSongs(): Song[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.OFFLINE_FAVORITE_SONGS);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.warn('Gagal membaca cache lagu favorit offline:', err);
+    return JSON.parse(raw);
+  } catch {
     return [];
   }
 }
@@ -30,27 +21,10 @@ export function cacheFavoriteSongs(allSongs: Song[], favoriteIds: string[]): voi
   if (typeof window === 'undefined') return;
   try {
     const favoriteSet = new Set(favoriteIds);
-    // Find matching songs from current catalog
-    const matchingSongs = allSongs.filter((s) => favoriteSet.has(s.id));
-
-    // Also preserve any previously cached favorites that might not be in the current catalog
-    const existingCache = getOfflineFavoriteSongs();
-    const existingMap = new Map<string, Song>();
-    existingCache.forEach((s) => {
-      if (favoriteSet.has(s.id)) {
-        existingMap.set(s.id, s);
-      }
-    });
-
-    // Merge latest version
-    matchingSongs.forEach((s) => {
-      existingMap.set(s.id, s);
-    });
-
-    const finalSongs = Array.from(existingMap.values());
-    localStorage.setItem(STORAGE_KEYS.OFFLINE_FAVORITE_SONGS, JSON.stringify(finalSongs));
-  } catch (err) {
-    console.warn('Gagal menyimpan cache lagu favorit offline:', err);
+    const favSongs = allSongs.filter((s) => favoriteSet.has(s.id));
+    localStorage.setItem(STORAGE_KEYS.OFFLINE_FAVORITE_SONGS, JSON.stringify(favSongs));
+  } catch (e) {
+    console.error('Failed to cache favorite songs:', e);
   }
 }
 
@@ -76,12 +50,10 @@ export function cacheViewedSong(song: Song): void {
   try {
     const recent = getOfflineRecentSongs();
     const filtered = recent.filter((s) => s.id !== song.id);
-    // Keep up to 30 most recently viewed songs
     const updated = [song, ...filtered].slice(0, 30);
     localStorage.setItem(STORAGE_KEYS.OFFLINE_RECENT_SONGS, JSON.stringify(updated));
-    localStorage.setItem(STORAGE_KEYS.LAST_OFFLINE_VIEW, song.id);
-  } catch (err) {
-    console.warn('Gagal menyimpan cache lagu terakhir dibuka:', err);
+  } catch (e) {
+    console.error('Failed to cache viewed song:', e);
   }
 }
 
@@ -93,21 +65,8 @@ export function getOfflineRecentSongs(): Song[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.OFFLINE_RECENT_SONGS);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return JSON.parse(raw);
   } catch {
     return [];
   }
-}
-
-/**
- * Retrieve any cached song by its ID (checks favorite cache first, then recent cache)
- */
-export function getOfflineSongById(songId: string): Song | undefined {
-  const favorites = getOfflineFavoriteSongs();
-  const foundFav = favorites.find((s) => s.id === songId);
-  if (foundFav) return foundFav;
-
-  const recent = getOfflineRecentSongs();
-  return recent.find((s) => s.id === songId);
 }

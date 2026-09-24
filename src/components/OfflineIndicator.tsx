@@ -1,6 +1,6 @@
 import React from 'react';
+import { WifiOff, HardDriveDownload } from 'lucide-react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { WifiOff, ShieldCheck } from 'lucide-react';
 
 export const OfflineIndicator: React.FC = () => {
   const isOnline = useOnlineStatus();
@@ -8,21 +8,17 @@ export const OfflineIndicator: React.FC = () => {
   if (isOnline) return null;
 
   return (
-    <aside
-      aria-live="polite"
-      className="fixed bottom-20 sm:bottom-6 left-4 sm:left-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-amber-500 text-white shadow-2xl backdrop-blur-md border border-amber-400/50 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3 duration-200 no-print"
-    >
-      <span className="relative flex h-2.5 w-2.5">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
-      </span>
-      <WifiOff className="w-4 h-4 shrink-0" />
-      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5 leading-tight">
-        <span className="font-bold">Mode Offline Aktif</span>
-        <span className="text-amber-100 text-[11px] sm:text-xs">
-          • Chord favorit tetap bisa diakses tanpa internet
+    <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-800 dark:text-amber-200 px-4 py-2 text-xs flex items-center justify-between font-medium backdrop-blur-sm sticky top-0 z-50">
+      <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
+        <WifiOff className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+        <span>
+          <strong>Mode Offline Aktif</strong> &mdash; Anda tetap dapat mengakses lagu tersimpan &amp; favorit secara offline tanpa kuota internet.
         </span>
       </div>
-    </aside>
+      <div className="hidden sm:flex items-center gap-1.5 text-[11px] bg-amber-500/20 px-2 py-0.5 rounded-full shrink-0 font-bold">
+        <HardDriveDownload className="w-3.5 h-3.5" />
+        Tersimpan Lokal
+      </div>
+    </div>
   );
 };

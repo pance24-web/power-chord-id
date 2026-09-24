@@ -1,71 +1,139 @@
 import React from 'react';
+import { Heart, Music, Sparkles, HardDriveDownload, Edit3, Trash2 } from 'lucide-react';
 import { Song } from '../types/chord';
-import { Heart, Music } from 'lucide-react';
+import { isSongCachedOffline } from '../utils/offlineStorage';
 
 interface SongCardProps {
   song: Song;
   isFavorite: boolean;
+  favoritesList: string[];
   onSelect: (song: Song) => void;
-  onToggleFavorite: (songId: string) => void;
+  onToggleFavorite: (e: React.MouseEvent, songId: string) => void;
+  onEdit?: (e: React.MouseEvent, song: Song) => void;
+  onDelete?: (e: React.MouseEvent, songId: string) => void;
 }
 
 export const SongCard: React.FC<SongCardProps> = ({
   song,
   isFavorite,
+  favoritesList,
   onSelect,
   onToggleFavorite,
+  onEdit,
+  onDelete,
 }) => {
+  const isCached = isSongCachedOffline(song.id, favoritesList);
+
   return (
     <div
       onClick={() => onSelect(song)}
-      className="group p-4 bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 rounded-2xl shadow-2xs hover:shadow-md hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all duration-150 cursor-pointer flex flex-col justify-between"
+      className="group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/70 shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden"
     >
       <div>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">
-              {song.title}
-            </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
-              {song.artist}
-            </p>
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
+              <Music className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1 group-hover:text-amber-500 transition-colors">
+                {song.title}
+              </h3>
+              <p className="text-xs text-slate-500 line-clamp-1 font-medium">{song.artist}</p>
+            </div>
           </div>
 
+          {/* Favorite Toggle Button */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(song.id);
-            }}
-            className={`p-1.5 rounded-lg transition-colors ${
+            type="button"
+            onClick={(e) => onToggleFavorite(e, song.id)}
+            className={`p-2 rounded-full transition-colors cursor-pointer ${
               isFavorite
-                ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
+                : 'text-slate-300 dark:text-slate-600 hover:text-rose-400'
             }`}
-            title={isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit'}
-            aria-label={`Favorit ${song.title}`}
+            title={isFavorite ? 'Hapus dari Favorit' : 'Tambah ke Favorit'}
           >
             <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
         </div>
+
+        {/* Chords preview pills */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {song.chords.slice(0, 5).map((chord) => (
+            <span
+              key={chord}
+              className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
+            >
+              {chord}
+            </span>
+          ))}
+          {song.chords.length > 5 && (
+            <span className="font-mono text-[10px] text-slate-400 self-center">
+              +{song.chords.length - 5}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Clean unboxed metadata with subtle typographic separators */}
-      <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-        <div className="flex items-center gap-1.5 font-medium truncate">
-          <span>{song.genre}</span>
-          <span aria-hidden="true" className="opacity-40">·</span>
-          <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">Kunci: {song.originalKey}</span>
+      {/* Meta Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+            Key: {song.originalKey}
+          </span>
           {song.capo && song.capo > 0 ? (
-            <>
-              <span aria-hidden="true" className="opacity-40">·</span>
-              <span>Capo {song.capo}</span>
-            </>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold">
+              Capo {song.capo}
+            </span>
           ) : null}
+          {isCached && (
+            <span
+              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+              title="Tersimpan di memori offline perangkat"
+            >
+              <HardDriveDownload className="w-3 h-3" />
+              Offline
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-neutral-400 font-medium shrink-0">
-          <Music className="w-3 h-3 text-amber-500/70" />
-          <span>{song.difficulty}</span>
+        <div className="flex items-center gap-1">
+          {song.isCustom && (
+            <>
+              {onEdit && (
+                <button
+                  onClick={(e) => onEdit(e, song)}
+                  className="p-1 text-slate-400 hover:text-amber-500 transition-colors"
+                  title="Edit Chord Ini"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => onDelete(e, song.id)}
+                  className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                  title="Hapus Lagu Ini"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </>
+          )}
+          {song.difficulty && (
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                song.difficulty === 'Mudah'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : song.difficulty === 'Sedang'
+                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              {song.difficulty}
+            </span>
+          )}
         </div>
       </div>
     </div>

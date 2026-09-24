@@ -1,124 +1,87 @@
 import React from 'react';
 
-interface PowerChordLogoProps {
-  size?: number | string;
+interface LogoProps {
   className?: string;
-  showShadow?: boolean;
+  showText?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export const PowerChordLogo: React.FC<PowerChordLogoProps> = ({
-  size = 36,
+export const PowerChordLogo: React.FC<LogoProps> = ({
   className = '',
-  showShadow = true,
+  showText = true,
+  size = 'md',
 }) => {
-  const pixelSize = typeof size === 'number' ? `${size}px` : size;
+  const sizeMap = {
+    sm: { icon: 28, text: 'text-lg', dot: 'w-1.5 h-1.5' },
+    md: { icon: 38, text: 'text-2xl', dot: 'w-2 h-2' },
+    lg: { icon: 48, text: 'text-3xl', dot: 'w-2.5 h-2.5' },
+    xl: { icon: 64, text: 'text-4xl', dot: 'w-3 h-3' },
+  };
+
+  const { icon, text, dot } = sizeMap[size];
 
   return (
-    <svg
-      viewBox="0 0 512 512"
-      width={pixelSize}
-      height={pixelSize}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={`shrink-0 select-none ${className}`}
-      aria-label="PowerChord Logo"
-    >
-      <defs>
-        {/* Outer pick 3D radial gradient */}
-        <radialGradient id="pcPickSurface" cx="45%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#FF8A24" />
-          <stop offset="55%" stopColor="#F97316" />
-          <stop offset="85%" stopColor="#EA580C" />
-          <stop offset="100%" stopColor="#C2410C" />
-        </radialGradient>
+    <div className={`flex items-center gap-2.5 select-none ${className}`}>
+      {/* Dynamic Pick & Fret Icon */}
+      <div className="relative flex items-center justify-center shrink-0">
+        <svg
+          width={icon}
+          height={icon}
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="drop-shadow-[0_2px_8px_rgba(249,115,22,0.35)] transition-transform duration-300 hover:scale-105"
+        >
+          <defs>
+            <linearGradient id="pcGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+              <stop offset="0%" stopColor="#FB923C" />
+              <stop offset="50%" stopColor="#F97316" />
+              <stop offset="100%" stopColor="#EA580C" />
+            </linearGradient>
+            <linearGradient id="fretGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#FED7AA" stopOpacity="0.4" />
+            </linearGradient>
+          </defs>
 
-        {/* Rim bezel highlight */}
-        <linearGradient id="pcBezelGleam" x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%" stopColor="#FED7AA" stopOpacity="0.8" />
-          <stop offset="35%" stopColor="#FDBA74" stopOpacity="0.2" />
-          <stop offset="70%" stopColor="#9A3412" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#7C2D12" stopOpacity="0.6" />
-        </linearGradient>
+          {/* Guitar Pick Base */}
+          <path
+            d="M 50 94 C 36 94 12 68 12 36 C 12 18 30 10 50 10 C 70 10 88 18 88 36 C 88 68 64 94 50 94 Z"
+            fill="url(#pcGrad)"
+          />
 
-        {/* Inner orange stripes gradient */}
-        <linearGradient id="pcStripeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#EA580C" />
-          <stop offset="50%" stopColor="#F97316" />
-          <stop offset="100%" stopColor="#EA580C" />
-        </linearGradient>
+          {/* Guitar Strings / Frets Accent */}
+          <line x1="32" y1="26" x2="68" y2="26" stroke="url(#fretGrad)" strokeWidth="3" strokeLinecap="round" />
+          <line x1="35" y1="40" x2="65" y2="40" stroke="url(#fretGrad)" strokeWidth="3.5" strokeLinecap="round" />
+          <line x1="40" y1="54" x2="60" y2="54" stroke="url(#fretGrad)" strokeWidth="3" strokeLinecap="round" />
 
-        {showShadow && (
-          <filter id="pcDropShadow" x="-10%" y="-8%" width="125%" height="125%">
-            <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#000000" floodOpacity="0.18" />
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#7C2D12" floodOpacity="0.15" />
-          </filter>
-        )}
-      </defs>
+          {/* Vertical Strings */}
+          <line x1="40" y1="20" x2="43" y2="66" stroke="#FFFFFF" strokeOpacity="0.65" strokeWidth="2" strokeLinecap="round" />
+          <line x1="50" y1="18" x2="50" y2="72" stroke="#FFFFFF" strokeOpacity="0.8" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="60" y1="20" x2="57" y2="66" stroke="#FFFFFF" strokeOpacity="0.65" strokeWidth="2" strokeLinecap="round" />
 
-      {/* Pick Outer Body */}
-      <path
-        d="M 256 22
-           C 358 22 452 54 472 118
-           C 490 178 430 310 310 435
-           C 285 461 268 486 256 486
-           C 244 486 227 461 202 435
-           C 82 310 22 178 40 118
-           C 60 54 154 22 256 22 Z"
-        fill="url(#pcPickSurface)"
-        filter={showShadow ? 'url(#pcDropShadow)' : undefined}
-      />
+          {/* Chord Dots on Frets */}
+          <circle cx="41" cy="40" r="4.5" fill="#FFFFFF" />
+          <circle cx="50" cy="54" r="4.5" fill="#FED7AA" />
+          <circle cx="58" cy="40" r="4.5" fill="#FFFFFF" />
+        </svg>
 
-      {/* Subtle Rim Bevel */}
-      <path
-        d="M 256 23
-           C 356 23 450 55 470 118
-           C 488 177 428 308 309 433
-           C 284 459 267 483 256 483
-           C 245 483 228 459 203 433
-           C 84 308 24 177 42 118
-           C 62 55 156 23 256 23 Z"
-        fill="none"
-        stroke="url(#pcBezelGleam)"
-        strokeWidth="5"
-      />
+        {/* Live Audio indicator dot */}
+        <span className={`absolute -top-0.5 -right-0.5 ${dot} bg-amber-400 rounded-full animate-pulse ring-2 ring-white dark:ring-slate-900`} />
+      </div>
 
-      {/* White Inner Badge */}
-      <path
-        d="M 124 152
-           C 114 195 120 240 146 292
-           C 152 305 165 313 180 310
-           C 208 300 232 295 256 295
-           C 280 295 304 300 332 310
-           C 347 313 360 305 366 292
-           C 392 240 398 195 388 152
-           C 382 128 366 108 342 94
-           C 318 80 288 72 256 72
-           C 224 72 194 80 170 94
-           C 146 108 130 128 124 152 Z"
-        fill="#FFFFFF"
-      />
-
-      {/* Upper Orange Curved Bar */}
-      <path
-        d="M 152 170
-           C 182 142 217 128 256 128
-           C 295 128 330 142 360 170"
-        fill="none"
-        stroke="url(#pcStripeGrad)"
-        strokeWidth="35"
-        strokeLinecap="round"
-      />
-
-      {/* Lower Orange Curved Bar */}
-      <path
-        d="M 158 245
-           C 186 218 219 205 256 205
-           C 293 205 326 218 354 245"
-        fill="none"
-        stroke="url(#pcStripeGrad)"
-        strokeWidth="35"
-        strokeLinecap="round"
-      />
-    </svg>
+      {showText && (
+        <div className="flex flex-col leading-none">
+          <div className="flex items-center font-extrabold tracking-tight">
+            <span className={`${text} text-slate-900 dark:text-white font-sans tracking-tight`}>
+              Power<span className="text-amber-500">Chord</span>
+            </span>
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 mt-0.5">
+            Katalog Kunci Gitar
+          </span>
+        </div>
+      )}
+    </div>
   );
 };

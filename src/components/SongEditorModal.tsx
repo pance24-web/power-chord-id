@@ -1,220 +1,233 @@
-import React, { useState } from 'react';
-import { Song, GenreType, DifficultyType } from '../types/chord';
-import { X, Music2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, Plus } from 'lucide-react';
+import { Song } from '../types/chord';
 
 interface SongEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (song: Song) => void;
-  initialSong?: Song | null;
+  onSaveSong: (song: Song) => void;
+  editingSong?: Song | null;
 }
-
-const GENRES: GenreType[] = ['Pop', 'Rock', 'Akustik', 'Dangdut', 'Barat', 'Indie'];
-const DIFFICULTIES: DifficultyType[] = ['Mudah', 'Sedang', 'Sulit'];
-const KEYS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
 export const SongEditorModal: React.FC<SongEditorModalProps> = ({
   isOpen,
   onClose,
-  onSave,
-  initialSong,
+  onSaveSong,
+  editingSong,
 }) => {
-  const [title, setTitle] = useState(initialSong?.title || '');
-  const [artist, setArtist] = useState(initialSong?.artist || '');
-  const [originalKey, setOriginalKey] = useState(initialSong?.originalKey || 'C');
-  const [genre, setGenre] = useState<GenreType>(initialSong?.genre || 'Pop');
-  const [difficulty, setDifficulty] = useState<DifficultyType>(initialSong?.difficulty || 'Mudah');
-  const [capo, setCapo] = useState<number>(initialSong?.capo || 0);
-  const [content, setContent] = useState(
-    initialSong?.content ||
-      `[Intro]\nC  G  Am  F\n\n[Verse 1]\nC           G\nTulis lirik lagu di sini\nAm          F\nDengan kunci di atasnya\n\n[Chorus]\nC       G\nIni bagian reff\nAm      F\nLagu favorit Anda`
-  );
+  const [title, setTitle] = useState('');
+  const [artist, setArtist] = useState('');
+  const [originalKey, setOriginalKey] = useState('C');
+  const [tempo, setTempo] = useState<string>('80');
+  const [capo, setCapo] = useState<number>(0);
+  const [genre, setGenre] = useState('Pop');
+  const [difficulty, setDifficulty] = useState<'Mudah' | 'Sedang' | 'Lanjutan'>('Mudah');
+  const [content, setContent] = useState('');
+
+  useEffect(() => {
+    if (editingSong) {
+      setTitle(editingSong.title);
+      setArtist(editingSong.artist);
+      setOriginalKey(editingSong.originalKey || 'C');
+      setTempo(String(editingSong.tempo || '80'));
+      setCapo(editingSong.capo || 0);
+      setGenre(editingSong.genre || 'Pop');
+      setDifficulty(editingSong.difficulty || 'Mudah');
+      setContent(editingSong.content || '');
+    } else {
+      setTitle('');
+      setArtist('');
+      setOriginalKey('C');
+      setTempo('80');
+      setCapo(0);
+      setGenre('Pop');
+      setDifficulty('Mudah');
+      setContent(`[Intro]\nC  G  Am  F\n\n[Verse 1]\nC             G\nLirik baris pertama\nAm            F\nLirik baris kedua\n\n[Chorus]\nC             G\nLirik chorus di sini\nAm            F\nLirik chorus lanjut`);
+    }
+  }, [editingSong, isOpen]);
 
   if (!isOpen) return null;
 
+  // Extract chords from content
+  const extractChords = (text: string): string[] => {
+    const chordMatches = text.match(/\b([A-G][b#]?)(m|maj|min|dim|aug|sus|add)?([0-9]{1,2})?((\/[A-G][b#]?)?)\b/g);
+    if (!chordMatches) return [];
+    return Array.from(new Set(chordMatches));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !artist.trim() || !content.trim()) return;
+    if (!title.trim() || !artist.trim()) return;
 
-    const newSong: Song = {
-      id: initialSong?.id || `custom-${Date.now()}`,
+    const chords = extractChords(content);
+
+    const song: Song = {
+      id: editingSong?.id || `custom-${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
       title: title.trim(),
       artist: artist.trim(),
       originalKey,
+      tempo: tempo ? parseInt(tempo, 10) : undefined,
+      capo,
       genre,
       difficulty,
-      capo,
+      chords,
       content,
       isCustom: true,
-      createdAt: initialSong?.createdAt || Date.now(),
+      createdAt: editingSong?.createdAt || new Date().toISOString(),
     };
 
-    onSave(newSong);
+    onSaveSong(song);
     onClose();
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Tambah Chord Lagu Baru"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
-              <Music2 className="w-5 h-5" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+              {editingSong ? <Save className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                {initialSong ? 'Edit Chord Lagu' : 'Tambah Chord Lagu Baru'}
-              </h3>
-              <p className="text-xs text-neutral-500">Tersimpan otomatis di memori browser Anda</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {editingSong ? 'Edit Chord Lagu' : 'Tambah Chord Lagu Baru'}
+              </h2>
+              <p className="text-xs text-slate-500">Buat chord custom Anda sendiri dan simpan ke koleksi offline</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Tutup"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto py-4 space-y-4 pr-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Judul Lagu *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Judul Lagu <span className="text-amber-500">*</span>
               </label>
               <input
                 type="text"
                 required
-                placeholder="cth: Kopi Dangdut"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
+                placeholder="Judul lagu..."
+                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Artis / Penyanyi *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Artis / Penyanyi <span className="text-amber-500">*</span>
               </label>
               <input
                 type="text"
                 required
-                placeholder="cth: Fahmi Shahab"
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
+                placeholder="Nama artis..."
+                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Nada Dasar (Key)
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Kunci Asal
               </label>
               <select
                 value={originalKey}
                 onChange={(e) => setOriginalKey(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
+                className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm"
               >
-                {KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
+                {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map((k) => (
+                  <option key={k} value={k}>{k}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Genre
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Capo Fret
               </label>
               <select
-                value={genre}
-                onChange={(e) => setGenre(e.target.value as GenreType)}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
+                value={capo}
+                onChange={(e) => setCapo(Number(e.target.value))}
+                className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm"
               >
-                {GENRES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
+                <option value={0}>Tanpa Capo</option>
+                {[1, 2, 3, 4, 5, 6, 7].map((c) => (
+                  <option key={c} value={c}>Capo {c}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Tingkat Kesulitan
-              </label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as DifficultyType)}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
-              >
-                {DIFFICULTIES.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Capo (Fret)
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Tempo (BPM)
               </label>
               <input
                 type="number"
-                min="0"
-                max="7"
-                value={capo}
-                onChange={(e) => setCapo(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100"
+                value={tempo}
+                onChange={(e) => setTempo(e.target.value)}
+                placeholder="80"
+                className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Tingkat
+              </label>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value as 'Mudah' | 'Sedang' | 'Lanjutan')}
+                className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm"
+              >
+                <option value="Mudah">Mudah</option>
+                <option value="Sedang">Sedang</option>
+                <option value="Lanjutan">Lanjutan</option>
+              </select>
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Isi Kunci & Lirik *
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Chord &amp; Lirik Lagu <span className="text-amber-500">*</span>
               </label>
-              <span className="text-[11px] text-neutral-400">
-                Gunakan baris terpisah untuk chord atau kurung siku [Am]
-              </span>
+              <span className="text-[11px] text-slate-400">Gunakan font monospaced</span>
             </div>
             <textarea
               required
-              rows={10}
+              rows={12}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Ketik atau tempel lirik & chord di sini..."
-              className="w-full p-3 font-mono text-xs md:text-sm bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-neutral-900 dark:text-neutral-100 leading-relaxed"
+              placeholder="Ketik chord di atas lirik atau [C] dalam tanda kurung..."
+              className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-mono text-sm leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-200"
             />
           </div>
 
-          <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex justify-end gap-2">
+          <div className="pt-2 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl transition-colors"
+              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white rounded-xl shadow-xs transition-colors"
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all"
             >
-              Simpan Lagu
+              <Save className="w-4 h-4" />
+              Simpan Chord
             </button>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Song } from '../types/chord';
 import { Search, X, Music, ChevronRight } from 'lucide-react';
+import { Song } from '../types/chord';
 
 interface QuickSearchModalProps {
   isOpen: boolean;
@@ -28,78 +28,67 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  const filtered = query.trim()
-    ? songs.filter((s) => {
-        const q = query.toLowerCase();
-        return (
-          s.title.toLowerCase().includes(q) ||
-          s.artist.toLowerCase().includes(q) ||
-          s.genre.toLowerCase().includes(q)
-        );
-      }).slice(0, 8)
-    : songs.slice(0, 6);
+  const results = songs.filter((s) => {
+    const q = query.toLowerCase();
+    return s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q);
+  });
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-xl bg-white dark:bg-[#131B2E] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Search header */}
-        <div className="flex items-center px-4 border-b border-slate-200 dark:border-slate-800">
-          <Search className="w-5 h-5 text-slate-400" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full overflow-hidden">
+        {/* Input */}
+        <div className="flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 gap-3">
+          <Search className="w-5 h-5 text-amber-500 shrink-0" />
           <input
             ref={inputRef}
             type="text"
-            placeholder="Cari lagu, artis, atau genre..."
+            placeholder="Ketik judul lagu atau nama artis..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full py-4 px-3 text-sm sm:text-base bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden"
+            className="w-full bg-transparent text-sm focus:outline-hidden text-slate-900 dark:text-white placeholder:text-slate-400"
           />
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Results */}
-        <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 p-2">
-          {filtered.length > 0 ? (
-            filtered.map((song) => (
-              <div
+        {/* Results List */}
+        <div className="max-h-80 overflow-y-auto p-2">
+          {results.length > 0 ? (
+            results.map((song) => (
+              <button
                 key={song.id}
                 onClick={() => {
                   onSelectSong(song);
                   onClose();
                 }}
-                className="group flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/70 text-left transition-colors cursor-pointer group"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
                     <Music className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors">
                       {song.title}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                      {song.artist} • <span className="font-semibold text-indigo-600 dark:text-indigo-400">{song.genre}</span>
-                    </p>
+                    <p className="text-xs text-slate-400">{song.artist}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    Key: {song.originalKey}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </button>
             ))
           ) : (
-            <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
-              Tidak ada lagu yang cocok dengan "{query}".
+            <div className="py-8 text-center text-xs text-slate-400">
+              Tidak ada lagu yang cocok dengan &quot;{query}&quot;.
             </div>
           )}
         </div>

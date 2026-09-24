@@ -1,236 +1,192 @@
 import React from 'react';
-import { ChordDefinition } from '../types/chord';
-import { playChordStrum } from '../utils/audioSynth';
+import { ChordPosition } from '../types/chord';
+import { audioSynth } from '../utils/audioSynth';
 import { Volume2 } from 'lucide-react';
 
 interface ChordDiagramProps {
-  chord: ChordDefinition;
+  chord: ChordPosition | null;
+  chordName?: string;
   size?: 'sm' | 'md' | 'lg';
-  showPlayButton?: boolean;
-  className?: string;
+  showSoundButton?: boolean;
 }
 
 export const ChordDiagram: React.FC<ChordDiagramProps> = ({
   chord,
+  chordName,
   size = 'md',
-  showPlayButton = true,
-  className = '',
+  showSoundButton = true,
 }) => {
-  const { name, frets, fingers = [], baseFret = 1, barres = [] } = chord;
+  const displayChordName = chordName || chord?.chord || 'Chord';
 
-  // Sizing configurations
-  const width = size === 'sm' ? 100 : size === 'lg' ? 180 : 130;
-  const height = size === 'sm' ? 120 : size === 'lg' ? 210 : 155;
-  const marginX = size === 'sm' ? 18 : 22;
-  const marginTop = size === 'sm' ? 24 : 32;
-  const marginBottom = size === 'sm' ? 16 : 20;
+  if (!chord) {
+    return (
+      <div className="flex flex-col items-center justify-center p-3 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500">
+        <span className="font-bold text-amber-500 mb-1">{displayChordName}</span>
+        <span>Diagram tidak tersedia</span>
+      </div>
+    );
+  }
 
-  const numStrings = 6;
+  // Dimensions configuration based on size
+  const config = {
+    sm: { width: 100, height: 115, fretHeight: 18, stringSpacing: 14, dotRadius: 5 },
+    md: { width: 130, height: 155, fretHeight: 25, stringSpacing: 18, dotRadius: 7 },
+    lg: { width: 170, height: 200, fretHeight: 32, stringSpacing: 24, dotRadius: 9 },
+  }[size];
+
   const numFrets = 4;
+  const numStrings = 6;
+  const startX = (config.width - (numStrings - 1) * config.stringSpacing) / 2;
+  const startY = 32;
 
-  const fretWidth = (width - marginX * 2) / (numStrings - 1);
-  const fretHeight = (height - marginTop - marginBottom) / numFrets;
-
-  // Determine finger dot radius
-  const dotRadius = size === 'sm' ? 5 : size === 'lg' ? 8 : 6.5;
-
-  const handlePlayStrum = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    playChordStrum(chord);
+  const playChordSound = () => {
+    // Play a gentle arpeggio of the chord
+    const stringNotes: ('E2' | 'A2' | 'D3' | 'G3' | 'B3' | 'E4')[] = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
+    chord.frets.forEach((fret, stringIdx) => {
+      if (fret !== 'x') {
+        setTimeout(() => {
+          audioSynth.playGuitarString(stringNotes[stringIdx]);
+        }, stringIdx * 45);
+      }
+    });
   };
 
   return (
-    <div className={`flex flex-col items-center select-none ${className}`}>
+    <div className="flex flex-col items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-xs select-none">
       <div className="flex items-center justify-between w-full px-1 mb-1">
-        <span className="font-bold text-sm md:text-base text-neutral-900 dark:text-neutral-100 tracking-tight">
-          {name}
+        <span className="font-mono font-bold text-base text-slate-800 dark:text-slate-100">
+          {displayChordName}
         </span>
-        {showPlayButton && (
+        {showSoundButton && (
           <button
-            onClick={handlePlayStrum}
-            title="Dengarkan kunci"
-            className="p-1 text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            aria-label={`Dengarkan kunci ${name}`}
+            onClick={playChordSound}
+            title="Dengarkan Petikan Akor"
+            className="p-1 rounded-md text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
           >
             <Volume2 className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      <svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        className="overflow-visible"
-      >
-        {/* Nut (Thick line if baseFret is 1) */}
-        {baseFret === 1 ? (
+      <svg width={config.width} height={config.height} className="overflow-visible">
+        {/* Nut or Base Fret Number */}
+        {chord.baseFret && chord.baseFret > 1 ? (
+          <text
+            x={startX - 10}
+            y={startY + 12}
+            className="text-[10px] font-mono fill-amber-600 dark:fill-amber-400 font-bold"
+            textAnchor="end"
+          >
+            {chord.baseFret}fr
+          </text>
+        ) : (
           <line
-            x1={marginX}
-            y1={marginTop}
-            x2={width - marginX}
-            y2={marginTop}
+            x1={startX - 2}
+            y1={startY}
+            x2={startX + (numStrings - 1) * config.stringSpacing + 2}
+            y2={startY}
             stroke="currentColor"
             strokeWidth="4"
-            className="text-neutral-800 dark:text-neutral-200"
+            className="text-slate-800 dark:text-slate-200"
           />
-        ) : (
-          <>
-            {/* Base Fret indicator on the side */}
-            <text
-              x={marginX - 8}
-              y={marginTop + fretHeight / 2 + 4}
-              fontSize={size === 'sm' ? '10' : '11'}
-              fontWeight="bold"
-              textAnchor="end"
-              className="fill-neutral-500 dark:fill-neutral-400 font-mono"
-            >
-              {baseFret}fr
-            </text>
-            <line
-              x1={marginX}
-              y1={marginTop}
-              x2={width - marginX}
-              y2={marginTop}
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="text-neutral-400 dark:text-neutral-600"
-            />
-          </>
         )}
 
-        {/* Fret wire lines (Horizontal) */}
-        {Array.from({ length: numFrets }).map((_, i) => {
-          const y = marginTop + (i + 1) * fretHeight;
-          return (
-            <line
-              key={`fret-${i}`}
-              x1={marginX}
-              y1={y}
-              x2={width - marginX}
-              y2={y}
-              stroke="currentColor"
-              strokeWidth="1.2"
-              className="text-neutral-300 dark:text-neutral-700"
-            />
-          );
-        })}
+        {/* Fret Lines (Horizontal) */}
+        {Array.from({ length: numFrets + 1 }).map((_, i) => (
+          <line
+            key={`fret-${i}`}
+            x1={startX}
+            y1={startY + i * config.fretHeight}
+            x2={startX + (numStrings - 1) * config.stringSpacing}
+            y2={startY + i * config.fretHeight}
+            stroke="currentColor"
+            strokeWidth="1.2"
+            className="text-slate-300 dark:text-slate-700"
+          />
+        ))}
 
-        {/* Guitar strings (Vertical, from 6th E to 1st e) */}
-        {Array.from({ length: numStrings }).map((_, i) => {
-          const x = marginX + i * fretWidth;
-          // Thicker stroke for low strings
-          const stringThickness = 2.2 - (i * 0.25);
-          return (
-            <line
-              key={`string-${i}`}
-              x1={x}
-              y1={marginTop}
-              x2={x}
-              y2={marginTop + numFrets * fretHeight}
-              stroke="currentColor"
-              strokeWidth={Math.max(1, stringThickness)}
-              className="text-neutral-400 dark:text-neutral-600"
-            />
-          );
-        })}
+        {/* Strings (Vertical) */}
+        {Array.from({ length: numStrings }).map((_, i) => (
+          <line
+            key={`string-${i}`}
+            x1={startX + i * config.stringSpacing}
+            y1={startY}
+            x2={startX + i * config.stringSpacing}
+            y2={startY + numFrets * config.fretHeight}
+            stroke="currentColor"
+            strokeWidth={1 + (5 - i) * 0.3} // Thicker for lower pitch strings
+            className="text-slate-400 dark:text-slate-600"
+          />
+        ))}
 
-        {/* Barre chords if defined */}
-        {barres.map((barreFret, idx) => {
-          const relativeFret = barreFret - baseFret + 1;
-          if (relativeFret >= 1 && relativeFret <= numFrets) {
-            const y = marginTop + (relativeFret - 0.5) * fretHeight;
-            // find string range for barre
-            const barreIndices: number[] = [];
-            frets.forEach((f, strIdx) => {
-              if (f === barreFret) barreIndices.push(strIdx);
-            });
-            const minStr = Math.min(...barreIndices, 0);
-            const maxStr = Math.max(...barreIndices, 5);
+        {/* Barre Chord Representation */}
+        {chord.barre && (
+          <rect
+            x={startX + chord.barre.from * config.stringSpacing - config.dotRadius}
+            y={
+              startY +
+              ((chord.barre.fret - (chord.baseFret ? chord.baseFret - 1 : 0)) - 0.5) * config.fretHeight -
+              config.dotRadius
+            }
+            width={(chord.barre.to - chord.barre.from) * config.stringSpacing + config.dotRadius * 2}
+            height={config.dotRadius * 2}
+            rx={config.dotRadius}
+            className="fill-amber-500 opacity-90"
+          />
+        )}
 
-            return (
-              <rect
-                key={`barre-${idx}`}
-                x={marginX + minStr * fretWidth - dotRadius}
-                y={y - dotRadius}
-                width={(maxStr - minStr) * fretWidth + dotRadius * 2}
-                height={dotRadius * 2}
-                rx={dotRadius}
-                className="fill-amber-600 dark:fill-amber-500 opacity-90"
-              />
-            );
-          }
-          return null;
-        })}
+        {/* String Indicators ('x' or 'o' or Fingered Dot) */}
+        {chord.frets.map((fret, stringIdx) => {
+          const x = startX + stringIdx * config.stringSpacing;
 
-        {/* String markers: Muted (X), Open (O), or Finger positions */}
-        {frets.map((fret, strIdx) => {
-          const x = marginX + strIdx * fretWidth;
-
-          if (fret === -1) {
-            // Muted string (X above nut)
+          if (fret === 'x') {
             return (
               <text
-                key={`mute-${strIdx}`}
+                key={`mute-${stringIdx}`}
                 x={x}
-                y={marginTop - 8}
+                y={startY - 6}
                 textAnchor="middle"
-                fontSize={size === 'sm' ? '10' : '12'}
-                fontWeight="bold"
-                className="fill-neutral-400 dark:fill-neutral-500"
+                className="text-[11px] font-mono fill-rose-500 font-bold"
               >
-                ✕
+                &times;
               </text>
             );
           }
 
           if (fret === 0) {
-            // Open string (O above nut)
             return (
               <circle
-                key={`open-${strIdx}`}
+                key={`open-${stringIdx}`}
                 cx={x}
-                cy={marginTop - 11}
-                r={dotRadius * 0.65}
+                cy={startY - 9}
+                r={config.dotRadius - 2}
+                fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                fill="none"
-                className="text-neutral-600 dark:text-neutral-300"
+                className="text-slate-500 dark:text-slate-400"
               />
             );
           }
 
-          // Fretted note: check if it falls within visible window
-          const relativeFret = fret - baseFret + 1;
-          if (relativeFret >= 1 && relativeFret <= numFrets) {
-            const y = marginTop + (relativeFret - 0.5) * fretHeight;
-            const finger = fingers[strIdx];
+          // Relative fret position
+          const relativeFret = typeof fret === 'number' ? fret - (chord.baseFret ? chord.baseFret - 1 : 0) : 1;
+          const y = startY + (relativeFret - 0.5) * config.fretHeight;
 
-            return (
-              <g key={`fret-dot-${strIdx}`}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={dotRadius}
-                  className="fill-amber-600 dark:fill-amber-500"
-                />
-                {finger && finger > 0 && size !== 'sm' && (
-                  <text
-                    x={x}
-                    y={y + 3.5}
-                    textAnchor="middle"
-                    fontSize={size === 'lg' ? '10' : '8'}
-                    fontWeight="bold"
-                    className="fill-white font-mono pointer-events-none"
-                  >
-                    {finger}
-                  </text>
-                )}
-              </g>
-            );
-          }
-
-          return null;
+          return (
+            <g key={`dot-${stringIdx}`}>
+              <circle cx={x} cy={y} r={config.dotRadius} className="fill-amber-500" />
+              {chord.fingers && chord.fingers[stringIdx] && (
+                <text
+                  x={x}
+                  y={y + 3}
+                  textAnchor="middle"
+                  className="text-[9px] font-mono fill-white font-bold pointer-events-none"
+                >
+                  {chord.fingers[stringIdx]}
+                </text>
+              )}
+            </g>
+          );
         })}
       </svg>
     </div>

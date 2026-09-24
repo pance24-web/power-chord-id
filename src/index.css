@@ -62,7 +62,6 @@ html.amoled .dark\:bg-slate-800 {
   font-feature-settings: "tnum" 1;
 }
 
-
 /* Print styling for clean chord sheet printouts */
 @media print {
   header, nav, footer, .no-print, button, .sticky-toolbar, .floating-controls {
@@ -87,7 +86,6 @@ html.amoled .dark\:bg-slate-800 {
   .chord-badge {
     color: #b45309 !important;
     font-weight: bold !important;
-    background: transparent !important;
   }
 }
 
@@ -109,4 +107,3 @@ html.amoled .dark\:bg-slate-800 {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.5);
 }
-

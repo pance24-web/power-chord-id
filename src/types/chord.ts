@@ -1,23 +1,15 @@
-export type GenreType =
-  | 'Pop'
-  | 'Rock'
-  | 'Dangdut'
-  | 'Indie'
-  | 'Reggae'
-  | 'Minang'
-  | 'Melayu'
-  | 'Akustik'
-  | 'Barat';
-
-export type DifficultyType = 'Mudah' | 'Sedang' | 'Sulit';
 export type ThemeType = 'light' | 'dark' | 'amoled';
 
-export interface ChordDefinition {
-  name: string;
-  frets: number[]; // 6 strings: [E2, A2, D3, G3, B3, E4], -1 for mute (X), 0 for open (O), 1..N for fret number
-  fingers?: number[]; // [E2, A2, D3, G3, B3, E4], 0 for none, 1 for index, 2 for middle, 3 for ring, 4 for pinky
-  baseFret?: number; // Starting fret (default 1)
-  barres?: number[]; // Barre fret numbers
+export interface ChordPosition {
+  chord: string;
+  frets: (number | 'x')[]; // 6 strings from low E to high E: e.g. ['x', 3, 2, 0, 1, 0] for C
+  fingers?: (number | null)[]; // 1=index, 2=middle, 3=ring, 4=pinky
+  barre?: {
+    fret: number;
+    from: number; // string index 0-5
+    to: number;   // string index 0-5
+  };
+  baseFret?: number; // Starting fret, default 1
 }
 
 export interface Song {
@@ -25,36 +17,34 @@ export interface Song {
   title: string;
   artist: string;
   originalKey: string;
-  genre: GenreType;
-  difficulty?: DifficultyType;
-  tempo?: number;
-  timeSignature?: string;
+  tempo?: number | string;
   capo?: number;
-  content: string; // The formatted song text with chords
-  tags?: string[];
-  views?: string; // e.g. "76.4K"
-  likes?: string; // e.g. "3.2K"
-  rank?: number;
+  difficulty?: 'Mudah' | 'Sedang' | 'Lanjutan';
+  genre?: string;
+  album?: string;
+  year?: number | string;
+  youtubeId?: string;
+  chords: string[];
+  content: string; // The lyrics and chord progression markup
   isCustom?: boolean;
-  createdAt?: number;
-}
-
-export interface SongSettings {
-  transpose: number; // Semitones offset (-11 to +11)
-  capo: number; // Capo fret (0 to 7)
-  fontSize: number; // In px, e.g. 16
-  fontMono: boolean;
-  showDiagrams: boolean;
-  accidentalPreference: 'sharp' | 'flat';
-  leftHanded: boolean;
+  createdAt?: string;
 }
 
 export interface ChordRequest {
   id: string;
   songTitle: string;
-  artistName: string;
-  requesterName?: string;
+  artist: string;
   requesterEmail?: string;
   notes?: string;
-  createdAt: number;
+  requestedAt: string;
 }
+
+export const STORAGE_KEYS = {
+  THEME: 'powerchord_theme',
+  FAVORITES: 'powerchord_favorites',
+  CUSTOM_SONGS: 'powerchord_custom_songs',
+  OFFLINE_FAVORITE_SONGS: 'powerchord_offline_favorites',
+  OFFLINE_RECENT_SONGS: 'powerchord_offline_recent',
+  SCROLL_SPEED: 'powerchord_scroll_speed',
+  CHORD_REQUESTS: 'powerchord_chord_requests',
+} as const;
