@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Song, ThemeType, STORAGE_KEYS } from './types/chord';
 import { INITIAL_SONGS } from './data/songs';
@@ -22,18 +24,29 @@ import {
 
 export default function App() {
   // Theme state
-  const [theme, setTheme] = useState<ThemeType>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeType;
-      if (saved && ['light', 'dark', 'amoled'].includes(saved)) return saved;
-    } catch {}
-    return 'light';
-  });
+  const [theme, setTheme] = useState<ThemeType>('light');
 
   // Songs state
-  const [songs, setSongs] = useState<Song[]>(() => {
-    let all = [...INITIAL_SONGS];
+  const [songs, setSongs] = useState<Song[]>(INITIAL_SONGS);
+
+  // Favorites state
+  const [favorites, setFavorites] = useState<string[]>([
+    'sampai-jumpa-endank-soekamti',
+    'hati-yang-kau-sakiti-rizky-febian',
+  ]);
+
+  // Client hydration from localStorage
+  useEffect(() => {
     try {
+      const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeType;
+      if (savedTheme && ['light', 'dark', 'amoled'].includes(savedTheme)) {
+        setTheme(savedTheme);
+      }
+      const savedFavs = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
+      let all = [...INITIAL_SONGS];
       const savedCustom = localStorage.getItem(STORAGE_KEYS.CUSTOM_SONGS);
       if (savedCustom) {
         const parsed: Song[] = JSON.parse(savedCustom);
@@ -45,20 +58,11 @@ export default function App() {
         const missingFavorites = cachedFavorites.filter((s) => !existingIds.has(s.id));
         all = [...all, ...missingFavorites];
       }
+      setSongs(all);
     } catch (e) {
-      console.error('Error loading songs:', e);
+      console.error('Error hydrating localStorage state:', e);
     }
-    return all;
-  });
-
-  // Favorites state
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return ['sampai-jumpa-endank-soekamti', 'hati-yang-kau-sakiti-rizky-febian'];
-  });
+  }, []);
 
   // Navigation tab
   const [currentTab, setCurrentTab] = useState<'home' | 'catalog' | 'artists'>('home');
