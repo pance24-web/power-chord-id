@@ -38,7 +38,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full overflow-hidden">
         {/* Input */}
         <div className="flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 gap-3">
-          <Search className="w-5 h-5 text-amber-500 shrink-0" />
+          <Search className="w-5 h-5 text-blue-600 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -49,7 +49,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
           />
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -68,21 +68,23 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/70 text-left transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     <Music className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {song.title}
                     </h4>
                     <p className="text-xs text-slate-400">{song.artist}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    Key: {song.originalKey}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  {song.genre && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                      {song.genre}
+                    </span>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-blue-600 transition-all" />
                 </div>
               </button>
             ))

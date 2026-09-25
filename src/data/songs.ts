@@ -5,100 +5,65 @@ export const INITIAL_SONGS: Song[] = [
     id: 'sampai-jumpa-endank-soekamti',
     title: 'Sampai Jumpa',
     artist: 'Endank Soekamti',
-    originalKey: 'G',
+    originalKey: 'C',
     capo: 0,
     tempo: 75,
     difficulty: 'Mudah',
-    genre: 'Pop Punk / Acoustic',
+    genre: 'Rock',
+    tags: ['Rock', 'Indie'],
+    views: '76.4k',
+    likes: '3.2k',
     album: 'Soekamti Day',
     year: 2016,
-    chords: ['G', 'C', 'D', 'Em', 'Am', 'Bm'],
-    content: `[Intro]
-G  C  G  C
+    chords: ['C', 'G', 'Am', 'F'],
+    content: `Intro : C G Am F (2x)
 
-[Verse 1]
-G              C
-Datang akan pergi
-G                  C
-Lewat kan berlalu
-Em             Bm
-Ada kan tiada
-C                  D
-Bertemu akan berpisah
+C         G          Am         F
+Bila nanti saatnya tiba
+C         G          Am         F
+Kita kan berjumpa lagi
+C         G          Am         F
+Jangan pernah kau lupakan
+C         G          Am         F
+Semua yang pernah kita lakukan
 
-[Verse 2]
-G              C
-Awal kan berakhir
-G                  C
-Terbit kan tenggelam
-Em             Bm
-Pasang akan surut
-C                  D
-Bertemu akan berpisah
-
-[Chorus]
-     G              D
-Hey! Sampai jumpa di lain hari
-Em                   Bm
-Untuk kita bertemu lagi
-C                G
-Kurelakan dirimu pergi
-Am                D
-Meskipun ku tak siap untuk merindu
-     G              D
-Ku tak siap tanpa dirimu
-Em               Bm
-Kuharap terbaik untukmu
-C                G
+Reff :
+C         G          Am         F
 Sampai jumpa di lain hari
-Am        D       G
-Untuk kita bertemu lagi
-
-[Interlude]
-G  C  G  C
-
-[Bridge]
-Em             Bm
-Pasang akan surut
-C                  D
-Bertemu akan berpisah
-
-[Chorus]
-     G              D
-Hey! Sampai jumpa di lain hari
-Em                   Bm
-Untuk kita bertemu lagi
-C                G
-Kurelakan dirimu pergi
-Am                D
-Meskipun ku tak siap untuk merindu
-     G              D
-Ku tak siap tanpa dirimu
-Em               Bm
-Kuharap terbaik untukmu
-C                G
+C         G          Am         F
+Semoga kau baik-baik saja
+C         G          Am         F
 Sampai jumpa di lain hari
-Am        D       G
+C         G          Am         F
 Untuk kita bertemu lagi
 
-[Outro]
-G  C  G  C  G`,
+C         G          Am         F
+Kurelakan dirimu pergi
+C         G          Am         F
+Meskipun ku tak siap untuk merindu
+C         G          Am         F
+Ku tak siap tanpa dirimu
+C         G          Am         F
+Kuharap terbaik untukmu
+
+Outro : C G Am F (2x) C`,
   },
   {
     id: 'hati-yang-kau-sakiti-rizky-febian',
-    title: 'Hingga Tua Bersama',
+    title: 'Hati yang Kau Sakiti',
     artist: 'Rizky Febian',
     originalKey: 'C',
     capo: 0,
     tempo: 72,
     difficulty: 'Sedang',
-    genre: 'Pop Romance',
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '64.2k',
+    likes: '2.8k',
     year: 2021,
     chords: ['C', 'Em', 'F', 'G', 'Am', 'Dm'],
-    content: `[Intro]
-C  Em  F  G
+    content: `Intro : C Em F G
 
-[Verse 1]
 C             Em
 Inikah akhir cerita cinta
 F                G
@@ -108,13 +73,12 @@ Kini kau memilih tuk melangkah
 F               G
 Tinggalkan semua kenangan indah
 
-[Pre-Chorus]
 Am            Em
 Jika memang ini takdir kita
 F                    G
 Ku kan mencoba untuk rela
 
-[Chorus]
+Reff :
 C              Em
 Selama jantung ini berdetak
 F               G
@@ -124,8 +88,277 @@ Hingga nafasku terhenti
 F               G          C
 Ku kan slalu ada di sampingmu
 
-[Outro]
-C  Em  F  G  C`,
+Outro : C Em F G C`,
+  },
+  {
+    id: 'bukti-virzha',
+    title: 'Bukti',
+    artist: 'Virzha',
+    originalKey: 'G',
+    capo: 0,
+    tempo: 76,
+    difficulty: 'Mudah',
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '48.7k',
+    likes: '2.1k',
+    year: 2017,
+    chords: ['G', 'C', 'Em', 'D', 'Am'],
+    content: `Intro : G C G C
+
+G            C
+Memenangkan hatimu
+Em           D
+Bukanlah satu hal yang mudah
+G            C
+Kau berhasil membuat
+Em           D
+Ku tak bisa berpaling lagi
+
+C            D
+Kaulah bentuk terindah
+G            Em
+Dari baiknya Tuhan padaku
+Am           D
+Waktu takkan pernah mampu
+G            D
+Mengubah cintaku padamu
+
+Reff :
+G            C
+Semua kata rindumu
+Em           D
+Telah terpatri di dalam jiwa
+G            C
+Kau yang selalu ada
+D            G
+Bukti ketulusan cinta
+
+Outro : G C D G`,
+  },
+  {
+    id: 'cinta-luar-biasa-andmesh',
+    title: 'Cinta Luar Biasa',
+    artist: 'Andmesh',
+    originalKey: 'G',
+    capo: 0,
+    tempo: 68,
+    difficulty: 'Mudah',
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '42.0k',
+    likes: '1.9k',
+    year: 2018,
+    chords: ['G', 'Em', 'C', 'D', 'Am'],
+    content: `Intro : G Em C D
+
+G             Em
+Waktu pertama kali
+C             D
+Kulihat senyummu terukir
+G             Em
+Hati ini berbisik lirih
+C             D
+Kau yang kuinginkan slama ini
+
+Am            D
+Terimalah lagu ini
+G             Em
+Dari orang biasa
+Am            C
+Tapi cintaku padamu
+D
+Luar biasa
+
+Reff :
+G             Em
+Aku tak punya bunga
+C             D
+Aku tak punya harta
+G             Em
+Yang kupunya hanyalah hati
+C             D          G
+Cinta tulus luar biasa
+
+Outro : G Em C D G`,
+  },
+  {
+    id: 'jangan-menyerah-dmasiv',
+    title: 'Jangan Menyerah',
+    artist: "D'Masiv",
+    originalKey: 'F',
+    capo: 0,
+    tempo: 74,
+    difficulty: 'Mudah',
+    genre: 'Rock',
+    tags: ['Rock', 'Pop'],
+    views: '38.1k',
+    likes: '1.7k',
+    year: 2009,
+    chords: ['F', 'C', 'Dm', 'Bb', 'Am', 'Gm'],
+    content: `Intro : F C Dm Bb
+
+F            C
+Tak ada manusia
+Dm           Bb
+Yang terlahir sempurna
+F            C
+Jangan kau sesali
+Dm           Bb
+Segala yang telah terjadi
+
+Dm           Am
+Kita pasti pernah
+Bb           C
+Dapatkan cobaan yang berat
+Dm           Am
+Seakan hidup ini
+Bb           C
+Tak ada artinya lagi
+
+Reff :
+F            C
+Syukuri apa yang ada
+Dm           Bb
+Hidup adalah anugerah
+F            C
+Tetap jalani hidup ini
+Dm           Bb
+Melakukan yang terbaik
+
+Outro : F C Dm Bb F`,
+  },
+  {
+    id: 'satu-hati-sampai-mati-dewa-19',
+    title: 'Satu Hati Sampai Mati',
+    artist: 'Dewa 19',
+    originalKey: 'Am',
+    capo: 0,
+    tempo: 80,
+    difficulty: 'Sedang',
+    genre: 'Rock',
+    tags: ['Rock'],
+    views: '35.2k',
+    likes: '1.5k',
+    year: 1997,
+    chords: ['Am', 'Dm', 'G', 'C', 'F', 'E'],
+    content: `Intro : Am Dm G C F Dm E
+
+Am           Dm
+Walau jurang membentang
+G            C
+Takkan goyah setiaku
+F            Dm
+Kan kuarungi samudra
+E
+Demi cintamu padaku
+
+Am           Dm
+Biar badai menghadang
+G            C
+Kita kan slalu bersama
+F            Dm
+Satu jiwa satu rasa
+E
+Hingga akhir masa
+
+Reff :
+Am           Dm
+Satu hati sampai mati
+G            C
+Cintaku hanya untukmu
+F            Dm
+Tiada lain di hatiku
+E            Am
+Kekal abadi selamanya
+
+Outro : Am Dm E Am`,
+  },
+  {
+    id: 'jangan-dulu-rizky-febian',
+    title: 'Jangan Dulu',
+    artist: 'Rizky Febian',
+    originalKey: 'C',
+    capo: 0,
+    tempo: 70,
+    difficulty: 'Sedang',
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '32.1k',
+    likes: '1.3k',
+    year: 2022,
+    chords: ['C', 'G', 'Am', 'F', 'Dm', 'Em'],
+    content: `Intro : C G Am F
+
+C            G
+Jangan dulu pergi
+Am           F
+Beri aku waktu sekejap
+C            G
+Menatap mata teduhmu
+Am           F
+Yang slalu damaikan kalbu
+
+Dm           Em
+Bila nanti kau melangkah
+F            G
+Tinggalkan ruang hampa di sini
+
+Reff :
+C            G
+Jangan dulu kau akhiri
+Am           F
+Cerita indah yang kita rajut
+C            G
+Biarkan rasa ini tetap ada
+F            G          C
+Menemani setiap nafasku
+
+Outro : C G Am F C`,
+  },
+  {
+    id: 'aku-bukan-jodohnya-tri-suaka',
+    title: 'Aku Bukan Jodohnya',
+    artist: 'Tri Suaka',
+    originalKey: 'C',
+    capo: 0,
+    tempo: 68,
+    difficulty: 'Mudah',
+    genre: 'Pop',
+    tags: ['Pop', 'Dangdut'],
+    views: '28.4k',
+    likes: '1.1k',
+    year: 2021,
+    chords: ['C', 'G', 'Am', 'Em', 'F', 'Dm'],
+    content: `Intro : C G Am Em F Dm G
+
+C            G
+Ini salahku
+Am           Em
+Terlalu memikirkan egoku
+F            C
+Tak mampu buatmu bersanding
+Dm           G
+Dengan masa depanku
+
+Am           Em
+Dan kini kau telah pergi
+F            C
+Bersama orang yang kau pilih
+Dm           G
+Ku hanya bisa berdoa untukmu
+
+Reff :
+C            G
+Aku bukan jodohnya
+Am           Em
+Bukan yang terbaik untukmu
+F            C
+Relakan ku pergi
+Dm           G        C
+Semoga kau bahagia selalu
+
+Outro : F G C`,
   },
   {
     id: 'kangen-dewa-19',
@@ -135,15 +368,15 @@ C  Em  F  G  C`,
     capo: 0,
     tempo: 78,
     difficulty: 'Sedang',
-    genre: 'Pop Rock Ballad',
+    genre: 'Rock',
+    tags: ['Rock'],
+    views: '24.7k',
+    likes: '1.0k',
     album: '19',
     year: 1992,
     chords: ['D', 'Bm', 'G', 'A', 'Em', 'F#m'],
-    content: `[Intro]
-D  Bm  G  A
-D  Bm  G  A
+    content: `Intro : D Bm G A (2x)
 
-[Verse 1]
 D           Bm
 Kutrima suratmu
 G            A
@@ -155,19 +388,7 @@ Dirimu akan hadirnya diriku
 Bm        F#m       G
 Di dalam hari-harimu bersama lagi
 
-[Verse 2]
-D               Bm
-Kaupun bertanya padaku
-G                 A
-Kapan aku akan kembali lagi
-D               Bm
-Membawa semua kerinduan
-G             A
-Dan memelukmu dalam dekapku
-Bm        F#m         G
-Katakan padaku semua inginmu
-
-[Chorus]
+Reff :
 D                Bm
 Semua kata rindumu semakin membuatku
 G            A
@@ -177,184 +398,236 @@ Percayalah padaku akupun rindu kamu
 G                A              D
 Kuakan pulang melepas semua kerinduan
 
-[Outro]
-D  Bm  G  A  D`,
+Outro : D Bm G A D`,
   },
   {
-    id: 'dan-sheila-on-7',
-    title: 'Dan...',
-    artist: 'Sheila on 7',
-    originalKey: 'C',
+    id: 'bintang-kehidupan-nike-ardilla',
+    title: 'Bintang Kehidupan',
+    artist: 'Nike Ardilla',
+    originalKey: 'Am',
     capo: 0,
-    tempo: 84,
+    tempo: 72,
     difficulty: 'Mudah',
-    genre: 'Pop Rock',
-    album: 'Sheila on 7',
-    year: 1999,
-    chords: ['C', 'F', 'Am', 'G', 'Em', 'Dm'],
-    content: `[Intro]
-C  F  C  F
+    genre: 'Pop',
+    tags: ['Pop', 'Rock'],
+    views: '21.9k',
+    likes: '0.9k',
+    year: 1990,
+    chords: ['Am', 'G', 'F', 'C', 'Dm', 'E'],
+    content: `Intro : Am G F E (2x)
 
-[Verse 1]
-C             F
-Dan... bila esok
-C              F
-Datang kembali
-C              F
-Seperti sedia kala di mana kau bisa
-Am        G        F
-Bercanda lagi...
+Am          G
+Jenuh aku mendengar
+F           C
+Manisnya kata cinta
+Dm          Am
+Lebih baik sendiri
+F           E
+Tanpa dusta dan janji
 
-[Verse 2]
-C             F
-Dan... perlahan kaupun
-C             F
-Lupakan aku
-C               F
-Mimpi burukmu di mana tlah kutancapkan
-Am      G       F
-Duri tajam...
+Am          G
+Malam-malam dingin
+F           C
+Kupandang langit luas
+Dm          Am
+Mencari sebutir bintang
+F           E
+Penerang dalam gelap
 
-[Chorus]
-Am           Em
-Kau slalu merasa
-F            G
-Terluka oleh sikapku
-Am           Em
-Dan bila memang ku bersalah
-F                 G
-Maafkanlah aku...
-C             F
-Dan... lupakanlah aku
-C               F           C
-Bila itu memang yang terbaik
+Reff :
+C           G
+Bintang kehidupan
+Am          Em
+Tuntun langkah hatiku
+F           C
+Menuju jalan terang
+Dm          E          Am
+Tempat cinta sejati bermuara
 
-[Outro]
-C  F  C  F  C`,
+Outro : Am G F E Am`,
   },
   {
-    id: 'yang-terdalam-peterpan',
-    title: 'Yang Terdalam',
-    artist: 'Peterpan (Noah)',
+    id: 'bila-nanti-ricky-febian',
+    title: 'Bila Nanti',
+    artist: 'Ricky Febian',
     originalKey: 'C',
     capo: 0,
     tempo: 70,
     difficulty: 'Mudah',
-    genre: 'Pop Rock',
-    album: 'Taman Langit',
-    year: 2003,
-    chords: ['C', 'F', 'G', 'Am'],
-    content: `[Intro]
-C  F  G  C
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '18.5k',
+    likes: '0.8k',
+    year: 2020,
+    chords: ['C', 'Em', 'F', 'G', 'Am'],
+    content: `Intro : C Em F G
 
-[Verse 1]
-C               F
-Kulepas semua yang kuinginkan
-G               C
-Tak akan kuulangi lagi
-C               F
-Menatap langit yang kuratapi
-G               C
-Bayangan indah masa lalu
+C             Em
+Bila nanti saatnya tiba
+F             G
+Ku kan slalu ada untukmu
+C             Em
+Menemanimu dalam suka duka
+F             G
+Hingga akhir nafasku
 
-[Chorus]
-C              F
-Telah kucoba merelakanmu
-G              C
-Telah kuberi semua yang kupunya
-C              F
-Kini ku hanya terdiam sepi
-G               C
-Mengingat yang terdalam
-
-[Outro]
-C  F  G  C`,
+Reff :
+Am            Em
+Peluklah diriku erat
+F             G
+Jangan pernah lepaskan
+C             Em
+Kuingin bersamamu
+F       G       C
+Selamanya di sisiku`,
   },
   {
-    id: 'akad-payung-teduh',
-    title: 'Akad',
-    artist: 'Payung Teduh',
-    originalKey: 'E',
+    id: 'kehilangan-firman',
+    title: 'Kehilangan',
+    artist: "D'Masiv",
+    originalKey: 'Am',
     capo: 0,
-    tempo: 98,
+    tempo: 76,
     difficulty: 'Sedang',
-    genre: 'Folk Jazz',
-    album: 'Ruang Tunggu',
-    year: 2017,
-    chords: ['E', 'C#m', 'F#m', 'B', 'G#m', 'A'],
-    content: `[Intro]
-E  C#m  F#m  B
-E  C#m  F#m  B
+    genre: 'Rock',
+    tags: ['Rock'],
+    views: '29.3k',
+    likes: '1.2k',
+    year: 2008,
+    chords: ['Am', 'Dm', 'G', 'C', 'F', 'E'],
+    content: `Intro : Am Dm G C F E
 
-[Verse 1]
-E                     C#m
-Betapa bahagianya hatiku saat
-F#m             B
-Kududuk berdua denganmu
-E                       C#m
-Berjalan bersamamu menari-nari
-F#m            B
-Namun bila hari ini adalah yang terakhir
+Am          Dm
+Kucoba bertahan
+G           C
+Di tengah kepedihan ini
+F           Dm
+Saat kau memilih pergi
+E
+Tinggalkan kenangan sepi
 
-[Chorus]
-A            B
-Bila nanti saatnya tlah tiba
-G#m          C#m
-Kuingin kau menjadi istriku
-F#m          B
-Berjalan bersamamu dalam terik dan hujan
-E            E7
-Berlarian ke sana kemari
-A            B
-Dan bila hatiku terbangun
-G#m           C#m
-Kuingin kau di sampingku
-F#m          B            E
-Menemaniku hingga ujung waktu
-
-[Outro]
-E  C#m  F#m  B  E`,
+Reff :
+Am          Dm
+Ku kehilangan arah
+G           C
+Tanpa hadirmu di sini
+F           Dm
+Kembalilah kekasihku
+E           Am
+Pulihkan hatiku lagi`,
   },
   {
-    id: 'wonderwall-oasis',
-    title: 'Wonderwall',
-    artist: 'Oasis',
-    originalKey: 'Em',
-    capo: 2,
-    tempo: 87,
+    id: 'iklim-raisa',
+    title: 'Iklim',
+    artist: 'Raisa',
+    originalKey: 'G',
+    capo: 0,
+    tempo: 82,
+    difficulty: 'Sedang',
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '15.6k',
+    likes: '0.7k',
+    year: 2021,
+    chords: ['G', 'C', 'Am', 'D', 'Bm', 'Em'],
+    content: `Intro : G C Am D
+
+G            C
+Seperti cuaca berganti
+Am           D
+Hati ini pun bimbang
+G            C
+Mencari kehangatan cinta
+Am           D
+Di antara hembusan angin
+
+Reff :
+G            Bm
+Biarkan waktu menjawab
+C            D
+Segala tanya di jiwa
+G            Em
+Cinta yang sesungguhnya
+C      D      G
+Akan tetap abadi`,
+  },
+  {
+    id: 'kemarin-seventeen',
+    title: 'Kemarin',
+    artist: 'Seventeen',
+    originalKey: 'Am',
+    capo: 0,
+    tempo: 68,
     difficulty: 'Mudah',
-    genre: 'Britpop / Acoustic',
-    album: "(What's the Story) Morning Glory?",
-    year: 1995,
-    chords: ['Em7', 'G', 'Dsus4', 'A7sus4', 'Cadd9'],
-    content: `[Intro]
-Em7  G  Dsus4  A7sus4 (x4)
+    genre: 'Pop',
+    tags: ['Pop'],
+    views: '31.4k',
+    likes: '1.4k',
+    year: 2016,
+    chords: ['Am', 'Dm', 'G', 'C', 'F', 'E'],
+    content: `Intro : Am Dm G C F Dm E
 
-[Verse 1]
-Em7          G
-Today is gonna be the day
-        Dsus4              A7sus4
-That they're gonna throw it back to you
-Em7          G
-By now you should've somehow
-    Dsus4              A7sus4
-Realized what you gotta do
-Em7                  G
-I don't believe that anybody
-Dsus4        A7sus4       Cadd9   Dsus4   A7sus4
-Feels the way I do about you now
+Am            Dm
+Kemarin engkau masih ada di sini
+G             C
+Bersamaku menikmati rasa ini
+F             Dm
+Berharap semua takkan pernah berakhir
+E
+Bersamamu... bersamamu...
 
-[Chorus]
-        Cadd9  Em7  G
-Because maybe
-       Em7                Cadd9  Em7  G
-You're gonna be the one that saves me
-    Em7  Cadd9  Em7  G
-And after all
-           Em7   Cadd9  Em7  G  Em7
-You're my wonderwall
+Reff :
+Am            Dm
+Kini sendiri disini
+G             C
+Mencarimu tak tahu dimana
+F             Dm
+Semoga tenang kau disana
+E             Am
+Selamanya...`,
+  },
+  {
+    id: 'laskar-pelangi-nidji',
+    title: 'Laskar Pelangi',
+    artist: 'Nidji',
+    originalKey: 'A',
+    capo: 0,
+    tempo: 85,
+    difficulty: 'Mudah',
+    genre: 'Rock',
+    tags: ['Rock'],
+    views: '45.1k',
+    likes: '2.0k',
+    year: 2008,
+    chords: ['A', 'D', 'F#m', 'E', 'Bm', 'C#m'],
+    content: `Intro : A D A D
 
-[Outro]
-Cadd9  Em7  G  Em7`,
+A              D
+Mimpi adalah kunci
+A                  D
+Untuk kita menaklukkan dunia
+F#m            E
+Berlarilah tanpa lelah
+D              E
+Sampai engkau meraihnya
+
+A              D
+Laskar pelangi
+A                  D
+Takkan terikat waktu
+F#m            E
+Bebaskan mimpimu di angkasa
+D              E
+Warnai bintang di jiwa
+
+Reff :
+A         D
+Menarilah dan terus tertawa
+A         D
+Walau dunia tak seindah surga
+F#m       E           D
+Bersyukurlah pada yang kuasa
+Bm        C#m       D       E        A
+Cinta kita di dunia... selamanya`,
   },
 ];

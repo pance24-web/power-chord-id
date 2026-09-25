@@ -7,6 +7,7 @@ import { SongList } from './components/SongList';
 import { ArtistsView } from './components/ArtistsView';
 import { SongViewer } from './components/SongViewer';
 import { Footer } from './components/Footer';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ChordModal } from './components/ChordModal';
 import { ChordDictionaryModal } from './components/ChordDictionaryModal';
@@ -63,6 +64,13 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'home' | 'catalog' | 'artists'>('home');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false);
+
+  // Filters passed from Home to Catalog
+  const [catalogFilters, setCatalogFilters] = useState<{
+    search?: string;
+    genre?: string;
+    letter?: string;
+  }>({});
 
   // Modals state
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
@@ -134,8 +142,24 @@ export default function App() {
     setIsSongEditorOpen(true);
   };
 
+  const handleNavigateCatalogWithFilter = (options?: {
+    search?: string;
+    genre?: string;
+    letter?: string;
+  }) => {
+    setSelectedSong(null);
+    setFilterFavoritesOnly(false);
+    if (options) {
+      setCatalogFilters(options);
+    } else {
+      setCatalogFilters({});
+    }
+    setCurrentTab('catalog');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 transition-colors pb-16 md:pb-0">
       {/* Offline Status Top Bar */}
       <OfflineIndicator />
 
@@ -146,6 +170,7 @@ export default function App() {
           setSelectedSong(null);
           setCurrentTab(tab);
           setFilterFavoritesOnly(false);
+          setCatalogFilters({});
         }}
         theme={theme}
         onThemeChange={setTheme}
@@ -166,12 +191,14 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         {selectedSong ? (
           <SongViewer
             song={selectedSong}
+            allSongs={songs}
             isFavorite={favorites.includes(selectedSong.id)}
             onBack={() => setSelectedSong(null)}
+            onSelectSong={(song) => setSelectedSong(song)}
             onToggleFavorite={handleToggleFavorite}
             onOpenChordModal={(chord) => setActiveChordModal(chord)}
           />
@@ -183,9 +210,15 @@ export default function App() {
                 favorites={favorites}
                 onSelectSong={(song) => setSelectedSong(song)}
                 onToggleFavorite={handleToggleFavorite}
-                onNavigateCatalog={() => setCurrentTab('catalog')}
+                onNavigateCatalog={handleNavigateCatalogWithFilter}
+                onNavigateArtists={() => {
+                  setSelectedSong(null);
+                  setCurrentTab('artists');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 onOpenDictionary={() => setIsDictionaryOpen(true)}
                 onOpenTuner={() => setIsTunerOpen(true)}
+                onOpenRequest={() => setIsRequestOpen(true)}
                 onOpenAddSong={() => {
                   setEditingSong(null);
                   setIsSongEditorOpen(true);
@@ -195,8 +228,12 @@ export default function App() {
 
             {currentTab === 'catalog' && (
               <SongList
+                key={`${catalogFilters.search || ''}-${catalogFilters.genre || ''}-${catalogFilters.letter || ''}`}
                 songs={songs}
                 favorites={favorites}
+                initialSearch={catalogFilters.search || ''}
+                initialGenre={catalogFilters.genre || 'Semua'}
+                initialLetter={catalogFilters.letter || ''}
                 onSelectSong={(song) => setSelectedSong(song)}
                 onToggleFavorite={handleToggleFavorite}
                 onEditSong={handleEditCustomSong}
@@ -217,13 +254,36 @@ export default function App() {
 
       {/* Footer */}
       <Footer
-        onOpenDictionary={() => setIsDictionaryOpen(true)}
-        onOpenTuner={() => setIsTunerOpen(true)}
-        onOpenRequest={() => setIsRequestOpen(true)}
         onNavigateHome={() => {
           setSelectedSong(null);
           setCurrentTab('home');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onNavigateCatalog={() => {
+          setSelectedSong(null);
+          setCurrentTab('catalog');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateArtists={() => {
+          setSelectedSong(null);
+          setCurrentTab('artists');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenRequest={() => setIsRequestOpen(true)}
+      />
+
+      {/* Mobile Bottom Navigation (Screens 4, 5, 6, 7, 8 in Mockup) */}
+      <MobileBottomNav
+        currentTab={currentTab}
+        onTabChange={(tab) => {
+          setSelectedSong(null);
+          setCurrentTab(tab);
+          setFilterFavoritesOnly(false);
+          setCatalogFilters({});
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenRequest={() => setIsRequestOpen(true)}
+        hasSelectedSong={!!selectedSong}
       />
 
       {/* Modals */}

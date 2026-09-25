@@ -1,18 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Song } from '../types/chord';
-import { SongCard } from './SongCard';
-import { Search, Flame, Sparkles, BookOpen, Radio, Plus, Compass } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Eye, Heart, BookOpen, Users, Send } from 'lucide-react';
 
 interface HomePageProps {
   songs: Song[];
   favorites: string[];
   onSelectSong: (song: Song) => void;
   onToggleFavorite: (e: React.MouseEvent, songId: string) => void;
-  onNavigateCatalog: () => void;
+  onNavigateCatalog: (options?: { genre?: string; letter?: string; search?: string }) => void;
+  onNavigateArtists: () => void;
   onOpenDictionary: () => void;
   onOpenTuner: () => void;
+  onOpenRequest: () => void;
   onOpenAddSong: () => void;
 }
+
+const GENRE_CHIPS = [
+  'Semua',
+  'Pop',
+  'Rock',
+  'Dangdut',
+  'Indie',
+  'Reggae',
+  'Minang',
+  'Melayu',
+];
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export const HomePage: React.FC<HomePageProps> = ({
   songs,
@@ -20,127 +34,265 @@ export const HomePage: React.FC<HomePageProps> = ({
   onSelectSong,
   onToggleFavorite,
   onNavigateCatalog,
-  onOpenDictionary,
-  onOpenTuner,
-  onOpenAddSong,
+  onNavigateArtists,
+  onOpenRequest,
 }) => {
   const [heroSearch, setHeroSearch] = useState('');
-
-  // Top trending songs
-  const trendingSongs = songs.slice(0, 6);
+  const [activeGenre, setActiveGenre] = useState('Semua');
+  const [showMoreGenres, setShowMoreGenres] = useState(false);
 
   const handleHeroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (heroSearch.trim()) {
-      onNavigateCatalog();
+      onNavigateCatalog({ search: heroSearch.trim() });
     }
   };
 
+  // 10 Popular Songs matching the mockup
+  const popularSongs = useMemo(() => {
+    let list = [...songs];
+    if (activeGenre !== 'Semua') {
+      list = list.filter((s) => s.genre?.toLowerCase() === activeGenre.toLowerCase());
+    }
+    return list.slice(0, 10);
+  }, [songs, activeGenre]);
+
   return (
-    <div className="space-y-10 pb-8">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 text-white p-8 sm:p-12 shadow-xl">
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-white border border-white/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Katalog Chord Lagu Terlengkap &amp; Terpercaya</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Mainkan Lagu Favoritmu Kapan Saja &amp; Di Mana Saja.
+    <div className="space-y-12 pb-16">
+      {/* 1. Hero Section (Clean canvas with bold typography & search) */}
+      <section className="text-left space-y-6 pt-4 sm:pt-8 max-w-4xl">
+        <div className="space-y-3">
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            Cari Chord Lagu Favoritmu <br className="hidden sm:inline" />
+            dengan Mudah!
           </h1>
-
-          <p className="text-sm sm:text-base text-amber-100/90 font-medium">
-            Dilengkapi fitur <strong>Transpose nada akurat</strong>, <strong>Autoscroll otomatis</strong>, <strong>Diagram kunci interaktif</strong>, dan <strong>Dukungan Offline PWA</strong> tanpa kuota internet.
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base max-w-2xl font-normal leading-relaxed">
+            Temukan chord lagu dari berbagai genre dan artis favoritmu. Mainkan langsung dengan gitar!
           </p>
-
-          {/* Quick Search in Hero */}
-          <form onSubmit={handleHeroSubmit} className="pt-2 flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Cari chord lagu atau artis favoritmu..."
-                value={heroSearch}
-                onChange={(e) => setHeroSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white text-slate-900 rounded-2xl text-sm font-medium shadow-md focus:outline-hidden focus:ring-4 focus:ring-amber-300"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={onNavigateCatalog}
-              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-sm font-bold shadow-md cursor-pointer transition-transform hover:scale-105"
-            >
-              Jelajahi Semua
-            </button>
-          </form>
-
-          {/* Quick Shortcuts */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 text-xs font-semibold">
-            <span className="text-amber-100">Fitur Cepat:</span>
-            <button
-              onClick={onOpenTuner}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/20 transition-all cursor-pointer"
-            >
-              <Radio className="w-3.5 h-3.5" />
-              Tuner Gitar
-            </button>
-            <button
-              onClick={onOpenDictionary}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/20 transition-all cursor-pointer"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              Kamus Kunci
-            </button>
-            <button
-              onClick={onOpenAddSong}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/20 transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Tulis Lagu Sendiri
-            </button>
-          </div>
         </div>
 
-        {/* Decorative Guitar Silhouette Background */}
-        <div className="absolute -right-8 -bottom-16 w-96 h-96 opacity-15 pointer-events-none">
-          <svg viewBox="0 0 100 100" fill="currentColor">
-            <path d="M50 0 C60 20 85 30 85 65 C85 85 70 100 50 100 C30 100 15 85 15 65 C15 30 40 20 50 0 Z" />
-          </svg>
+        {/* Large Search Input */}
+        <form onSubmit={handleHeroSubmit} className="relative flex items-center max-w-3xl">
+          <input
+            type="text"
+            placeholder="Cari judul lagu atau artis..."
+            value={heroSearch}
+            onChange={(e) => setHeroSearch(e.target.value)}
+            className="w-full pl-5 pr-14 py-3.5 sm:py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 shadow-xs transition-all"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 p-2.5 sm:p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer transition-colors shadow-xs flex items-center justify-center"
+            aria-label="Cari sekarang"
+          >
+            <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </form>
+
+        {/* Genre Filter Chips (Chip Genre in Mockup: Semua, Pop, Rock, Dangdut, Indie, Reggae, Minang, Melayu, Lainnya ⌄) */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+          {GENRE_CHIPS.map((genre) => (
+            <button
+              key={genre}
+              onClick={() => setActiveGenre(genre)}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all cursor-pointer ${
+                activeGenre === genre
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+
+          {/* Lainnya Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMoreGenres(!showMoreGenres)}
+              className="px-3.5 py-2 rounded-xl font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Lainnya</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+
+            {showMoreGenres && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setShowMoreGenres(false)}
+                />
+                <div className="absolute left-0 mt-2 w-36 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-40">
+                  {['Akustik', 'Jazz', 'Ska', 'Campursari', 'Religi'].map((extra) => (
+                    <button
+                      key={extra}
+                      onClick={() => {
+                        setActiveGenre(extra);
+                        setShowMoreGenres(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      {extra}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </section>
 
-      {/* Popular Trending Section */}
+      {/* 2. Lagu Populer Section (2 columns on desktop, 1 on mobile, 10 items) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
-              <Flame className="w-5 h-5 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Chord Populer &amp; Trending</h2>
-              <p className="text-xs text-slate-500">Lagu yang paling sering dimainkan minggu ini</p>
-            </div>
-          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Lagu Populer
+          </h2>
           <button
-            onClick={onNavigateCatalog}
-            className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+            onClick={() => onNavigateCatalog()}
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
           >
-            Lihat Katalog Lengkap &rarr;
+            Lihat Semua &rarr;
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {trendingSongs.map((song) => (
-            <SongCard
-              key={song.id}
-              song={song}
-              isFavorite={favorites.includes(song.id)}
-              favoritesList={favorites}
-              onSelect={onSelectSong}
-              onToggleFavorite={onToggleFavorite}
-            />
+        {/* 2-Column Numbered List (Mockup Screen 1) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {popularSongs.map((song, index) => {
+            const isFav = favorites.includes(song.id);
+            return (
+              <div
+                key={song.id}
+                onClick={() => onSelectSong(song)}
+                className="group bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 hover:border-blue-500/50 dark:hover:border-blue-500/50 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+              >
+                {/* Left: Number + Title & Artist */}
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <span className="font-bold text-slate-400 dark:text-slate-500 text-sm sm:text-base w-5 text-center shrink-0">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {song.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {song.artist}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Genre Badge + Stats (👁 views, ♡ likes) */}
+                <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                  {song.genre && (
+                    <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
+                      {song.genre}
+                    </span>
+                  )}
+                  {song.views && (
+                    <span className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{song.views}</span>
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => onToggleFavorite(e, song.id)}
+                    className={`flex items-center gap-1 text-[11px] font-medium p-1 rounded-full transition-colors cursor-pointer ${
+                      isFav
+                        ? 'text-rose-500 font-bold'
+                        : 'text-slate-400 hover:text-rose-500'
+                    }`}
+                    title={isFav ? 'Hapus dari favorit' : 'Simpan favorit'}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                    {song.likes && <span>{song.likes}</span>}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3. Jelajahi Lagu Berdasarkan Huruf */}
+      <section className="space-y-4 pt-2">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+          Jelajahi Lagu Berdasarkan Huruf
+        </h2>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {ALPHABET.map((letter) => (
+            <button
+              key={letter}
+              onClick={() => onNavigateCatalog({ letter })}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center justify-center transition-all cursor-pointer"
+            >
+              {letter}
+            </button>
           ))}
+        </div>
+      </section>
+
+      {/* 4. Three Bottom Navigation Cards (Mockup Screen 1) */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        {/* Card 1: Katalog Chord */}
+        <div
+          onClick={() => onNavigateCatalog()}
+          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center justify-between hover:border-blue-500/50 hover:shadow-xs transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                Katalog Chord
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Jelajahi ribuan chord lagu
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition-all shrink-0" />
+        </div>
+
+        {/* Card 2: Daftar Artis */}
+        <div
+          onClick={onNavigateArtists}
+          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center justify-between hover:border-blue-500/50 hover:shadow-xs transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                Daftar Artis
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Temukan lagu dari artis favorit
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition-all shrink-0" />
+        </div>
+
+        {/* Card 3: Request Chord */}
+        <div
+          onClick={onOpenRequest}
+          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center justify-between hover:border-blue-500/50 hover:shadow-xs transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Send className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                Request Chord
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Belum ada chord yang dicari?
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition-all shrink-0" />
         </div>
       </section>
     </div>

@@ -26,7 +26,7 @@ export const ChordHoverToken: React.FC<ChordHoverTokenProps> = ({
           e.stopPropagation();
           if (onClickChord) onClickChord(chord);
         }}
-        className="font-mono font-bold text-amber-600 dark:text-amber-400 hover:text-orange-500 hover:underline cursor-pointer select-text px-0.5 rounded-sm transition-colors hover:bg-amber-100/60 dark:hover:bg-amber-900/30"
+        className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline cursor-pointer select-text px-0.5 rounded-sm transition-colors hover:bg-blue-50 dark:hover:bg-blue-950/40"
       >
         {chord}
       </button>

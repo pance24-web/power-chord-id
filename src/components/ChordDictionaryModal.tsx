@@ -39,17 +39,17 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Kamus Kunci Gitar</h2>
-              <p className="text-xs text-slate-500">Kumpulan diagram chord gitar lengkap dengan fingering & audio</p>
+              <p className="text-xs text-slate-500">Kumpulan diagram chord gitar lengkap dengan fingering &amp; audio</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -61,23 +61,22 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Cari chord... (misal: Em, Cmaj7, Dsus4)"
+              placeholder="Cari akor (misal: C, Am, G7, F#m, Dsus4)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100"
             />
           </div>
 
-          {/* Root note pills */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1">
             {roots.map((r) => (
               <button
                 key={r}
                 onClick={() => setSelectedRoot(r)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedRoot === r
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
                 }`}
               >
                 {r}
@@ -86,20 +85,26 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
           </div>
         </div>
 
-        {/* Chord Grid */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {/* Grid of Chord Cards */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {filteredChords.length > 0 ? (
-            filteredChords.map((chord) => {
-              const data = getChordData(chord);
-              return (
-                <div key={chord} className="flex justify-center">
-                  <ChordDiagram chord={data} chordName={chord} size="sm" showSoundButton={true} />
-                </div>
-              );
-            })
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {filteredChords.map((chordName) => {
+                const pos = getChordData(chordName);
+                if (!pos) return null;
+                return (
+                  <div
+                    key={chordName}
+                    className="p-3 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center hover:border-blue-400 transition-colors"
+                  >
+                    <ChordDiagram chord={pos} chordName={chordName} size="sm" showSoundButton={true} />
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            <div className="col-span-full py-12 text-center text-slate-500">
-              Tidak ada chord yang cocok dengan pencarian &quot;{search}&quot;.
+            <div className="py-12 text-center text-xs text-slate-400">
+              Tidak ada akor yang cocok dengan &quot;{search}&quot;.
             </div>
           )}
         </div>

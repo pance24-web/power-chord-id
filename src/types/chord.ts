@@ -21,6 +21,9 @@ export interface Song {
   capo?: number;
   difficulty?: 'Mudah' | 'Sedang' | 'Lanjutan';
   genre?: string;
+  tags?: string[];
+  views?: string;
+  likes?: string;
   album?: string;
   year?: number | string;
   youtubeId?: string;

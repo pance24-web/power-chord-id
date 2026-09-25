@@ -51,7 +51,7 @@ export const GuitarTuner: React.FC<GuitarTunerProps> = ({ isOpen, onClose }) => 
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
               🎸
             </div>
             <div>
@@ -61,7 +61,7 @@ export const GuitarTuner: React.FC<GuitarTunerProps> = ({ isOpen, onClose }) => 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -82,8 +82,8 @@ export const GuitarTuner: React.FC<GuitarTunerProps> = ({ isOpen, onClose }) => 
                   onClick={() => playNote(str)}
                   className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border transition-all cursor-pointer ${
                     isPlaying
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-lg scale-105 animate-pulse'
-                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-slate-800'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-105'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span className="text-[10px] uppercase font-bold opacity-60">Senar {str.stringNumber}</span>
@@ -99,7 +99,7 @@ export const GuitarTuner: React.FC<GuitarTunerProps> = ({ isOpen, onClose }) => 
               onClick={playAllStrum}
               className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
-              <Volume2 className="w-4 h-4 text-amber-500" />
+              <Volume2 className="w-4 h-4 text-blue-600" />
               Petik Semua Senar (Strum 6-1)
             </button>
           </div>
