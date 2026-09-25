@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PowerChordLogo } from './PowerChordLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { ThemeType } from '../types/chord';
-import { Search, Moon, Sun, User, Menu, X, Heart, Radio, BookOpen, Plus, Send } from 'lucide-react';
+import { Search, Moon, Sun, SlidersHorizontal, Menu, X, Heart, Radio, BookOpen, Plus, Send } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: 'home' | 'catalog' | 'artists';
@@ -32,7 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onShowFavorites,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [featuresMenuOpen, setFeaturesMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Action Zone: Search, Dark Mode, Profile (Matching mockup top right: 🔍 🌙 👤) */}
+        {/* Action Zone: Search, Dark Mode, and app features */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Search Trigger */}
           <button
@@ -114,36 +114,36 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* User Profile / Menu button */}
+          {/* App Features menu — no account or login required */}
           <div className="relative">
             <button
-              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              onClick={() => setFeaturesMenuOpen(!featuresMenuOpen)}
               className="p-2.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Menu pengguna"
-              title="Menu pengguna & fitur"
+              aria-label="Buka menu fitur"
+              title="Fitur PowerChord"
             >
-              <User className="w-4 h-4" />
+              <SlidersHorizontal className="w-4 h-4" />
               {favoritesCount > 0 && (
                 <span className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white dark:ring-slate-900" />
               )}
             </button>
 
-            {/* Profile Dropdown */}
-            {userDropdownOpen && (
+            {/* Features dropdown — all tools work locally without an account */}
+            {featuresMenuOpen && (
               <>
                 <div
                   className="fixed inset-0 z-40"
-                  onClick={() => setUserDropdownOpen(false)}
+                  onClick={() => setFeaturesMenuOpen(false)}
                 />
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">PowerChord Musisi</p>
-                    <p className="text-[11px] text-slate-400">Pustaka gitar pribadimu</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Fitur PowerChord</p>
+                    <p className="text-[11px] text-slate-400">Semua fitur tersedia tanpa login</p>
                   </div>
                   <button
                     onClick={() => {
                       onShowFavorites();
-                      setUserDropdownOpen(false);
+                      setFeaturesMenuOpen(false);
                     }}
                     className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between"
                   >
@@ -158,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       onOpenTuner();
-                      setUserDropdownOpen(false);
+                      setFeaturesMenuOpen(false);
                     }}
                     className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       onOpenDictionary();
-                      setUserDropdownOpen(false);
+                      setFeaturesMenuOpen(false);
                     }}
                     className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
@@ -178,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       onOpenAddSong();
-                      setUserDropdownOpen(false);
+                      setFeaturesMenuOpen(false);
                     }}
                     className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
