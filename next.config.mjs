@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   reactStrictMode: true,
+  // Use standalone in container/docker environments, default on Vercel
+  ...(process.env.VERCEL ? {} : { output: 'standalone' }),
 };
 
 export default nextConfig;
