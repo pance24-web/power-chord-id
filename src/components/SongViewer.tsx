@@ -23,6 +23,7 @@ import {
   Minimize2,
   Maximize2,
   Sliders,
+  RotateCcw,
 } from 'lucide-react';
 
 interface SongViewerProps {
@@ -53,7 +54,10 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
+  const [isFinished, setIsFinished] = useState<boolean>(false);
   const scrollIntervalRef = useRef<number | null>(null);
+  const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
+  const lyricsEndRef = useRef<HTMLDivElement | null>(null);
 
   // Speed presets from 0.0x to 1.0x
   const speedOptions = [
@@ -73,6 +77,45 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     });
   };
 
+  const scrollToLyricsStart = () => {
+    if (lyricsContainerRef.current) {
+      const navbarOffset = 70;
+      const targetY = lyricsContainerRef.current.getBoundingClientRect().top + window.scrollY - navbarOffset;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleToggleAutoScroll = (forceRestart = false) => {
+    if (autoScrollActive && !forceRestart) {
+      setAutoScrollActive(false);
+      return;
+    }
+
+    setIsFinished(false);
+
+    // If starting autoscroll: check if we should scroll to the start of lyrics
+    if (lyricsContainerRef.current) {
+      const lyricsRect = lyricsContainerRef.current.getBoundingClientRect();
+      const endRect = lyricsEndRef.current?.getBoundingClientRect();
+      const viewportThreshold = window.innerHeight - 80;
+      const isAtOrPastEnd = endRect ? endRect.bottom <= viewportThreshold : false;
+      const isAboveLyrics = lyricsRect.top > 120; // user is looking at top/header
+
+      if (forceRestart || isAtOrPastEnd || isAboveLyrics) {
+        scrollToLyricsStart();
+        // Give smooth scroll 350ms to reach the start of lyrics, then start scrolling
+        setTimeout(() => {
+          setAutoScrollActive(true);
+        }, 350);
+        return;
+      }
+    }
+
+    setAutoScrollActive(true);
+  };
+
   // Keyboard shortcut: Spacebar to toggle autoscroll (if not in input)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,12 +125,12 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       }
       if (e.code === 'Space') {
         e.preventDefault();
-        setAutoScrollActive((prev) => !prev);
+        handleToggleAutoScroll();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [autoScrollActive, isFinished]);
 
   // Real-time calculated statistics
   const {
@@ -106,15 +149,36 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     setTransposeStep(0);
     setCapoOffset(song.capo || 0);
     setAutoScrollActive(false);
+    setIsFinished(false);
   }, [song]);
 
-  // Handle Autoscroll
+  // Handle Autoscroll: begins from start and stops at the end of lyrics
   useEffect(() => {
     if (autoScrollActive && scrollSpeed > 0) {
-      // Dynamic interval: 1.0x -> 35ms (~28px/s), 0.5x -> 70ms (~14px/s), 0.2x -> 175ms (~5.7px/s)
-      const intervalMs = Math.max(20, Math.floor(35 / scrollSpeed));
+      setIsFinished(false);
+      // Dynamic interval: 1.0x -> 32ms (~31px/s), 0.5x -> 65ms (~15px/s), 0.2x -> 160ms (~6px/s)
+      const intervalMs = Math.max(20, Math.floor(32 / scrollSpeed));
       scrollIntervalRef.current = window.setInterval(() => {
-        window.scrollBy({ top: 1, behavior: 'smooth' });
+        // Check if bottom of lyrics has reached the viewport reading area
+        if (lyricsEndRef.current) {
+          const rect = lyricsEndRef.current.getBoundingClientRect();
+          const viewportThreshold = window.innerHeight - 80;
+          if (rect.bottom <= viewportThreshold) {
+            // Reached the end of lyrics: stop autoscroll automatically
+            setAutoScrollActive(false);
+            setIsFinished(true);
+            return;
+          }
+        } else {
+          const scrollBottom = window.innerHeight + window.scrollY;
+          if (scrollBottom >= document.documentElement.scrollHeight - 10) {
+            setAutoScrollActive(false);
+            setIsFinished(true);
+            return;
+          }
+        }
+
+        window.scrollBy({ top: 1, behavior: 'auto' });
       }, intervalMs);
     } else {
       if (scrollIntervalRef.current) {
@@ -421,10 +485,29 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
           {/* Lyrics and Chords Content Area */}
           <div
+            ref={lyricsContainerRef}
             className="p-5 sm:p-7 select-text overflow-x-auto min-h-[360px]"
             style={{ fontSize: `${fontSize}px` }}
           >
             {transposedContent.split('\n').map((line, idx) => renderFormattedLine(line, idx))}
+
+            {/* Marker Akhir Lirik & Akor (Titik berhenti otomatis autoscroll) */}
+            <div
+              ref={lyricsEndRef}
+              className="mt-8 pt-4 pb-2 border-t border-dashed border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-2 text-slate-400 dark:text-slate-500 text-xs"
+            >
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Akhir lirik & akor lagu
+              </span>
+              <button
+                onClick={() => handleToggleAutoScroll(true)}
+                className="text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Mulai ulang dari awal lirik
+              </button>
+            </div>
           </div>
 
           {/* Bottom Controls Bar (Mockup Screen 3: Auto Scroll toggle, [▶ Mulai] button, [...]) */}
@@ -434,7 +517,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               <input
                 type="checkbox"
                 checked={autoScrollActive}
-                onChange={() => setAutoScrollActive(!autoScrollActive)}
+                onChange={() => handleToggleAutoScroll()}
                 className="sr-only peer"
               />
               <div className="w-9 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 relative"></div>
@@ -443,16 +526,27 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               </span>
             </label>
 
-            {/* Action Buttons: [ ▶ Mulai ] & [...] */}
+            {/* Action Buttons: [ ▶ Mulai / ⏸ Jeda / ↺ Ulangi ] & [...] */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setAutoScrollActive(!autoScrollActive)}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-2xs cursor-pointer transition-all active:scale-95"
+                onClick={() => handleToggleAutoScroll()}
+                className={`px-5 py-2 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-2xs cursor-pointer transition-all active:scale-95 ${
+                  isFinished
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : autoScrollActive
+                    ? 'bg-amber-500 hover:bg-amber-600'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 {autoScrollActive ? (
                   <>
                     <Pause className="w-3.5 h-3.5 fill-current" />
                     <span>Jeda</span>
+                  </>
+                ) : isFinished ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Ulangi dari Awal</span>
                   </>
                 ) : (
                   <>
@@ -568,7 +662,11 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 )}
                 <span
                   className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                    autoScrollActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                    isFinished
+                      ? 'bg-blue-500'
+                      : autoScrollActive
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-300 dark:bg-slate-600'
                   }`}
                 ></span>
               </span>
@@ -577,29 +675,42 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                   Auto Scroll
                 </p>
                 <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
-                  {autoScrollActive
+                  {isFinished
+                    ? 'Selesai di akhir lirik'
+                    : autoScrollActive
                     ? scrollSpeed === 0
                       ? 'Diam (0.0x)'
-                      : 'Sedang berjalan'
+                      : 'Mulai dari awal lirik'
                     : 'Dijeda (Spasi)'}
                 </p>
               </div>
             </div>
 
-            {/* 2. Main Play / Pause Button */}
+            {/* 2. Main Play / Pause / Restart Button */}
             <button
-              onClick={() => setAutoScrollActive((prev) => !prev)}
+              onClick={() => handleToggleAutoScroll()}
               className={`px-3.5 sm:px-5 py-2 rounded-xl sm:rounded-full text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0 ${
-                autoScrollActive
+                isFinished
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/30 shadow-emerald-500/20'
+                  : autoScrollActive
                   ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400/30 shadow-amber-500/20'
                   : 'bg-blue-600 hover:bg-blue-700 text-white ring-2 ring-blue-500/30 shadow-blue-500/20'
               }`}
-              title="Spasi: Jeda atau Mulai auto scroll"
+              title={
+                isFinished
+                  ? 'Klik untuk mengulangi scroll dari awal lirik'
+                  : 'Spasi: Jeda atau Mulai auto scroll'
+              }
             >
               {autoScrollActive ? (
                 <>
                   <Pause className="w-3.5 h-3.5 fill-current" />
                   <span>Jeda</span>
+                </>
+              ) : isFinished ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Ulangi</span>
                 </>
               ) : (
                 <>
@@ -673,11 +784,11 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               </button>
             </div>
 
-            {/* 4. Quick Scroll to Top */}
+            {/* 4. Quick Scroll to Start of Lyrics */}
             <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onClick={scrollToLyricsStart}
               className="p-2 rounded-xl sm:rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors shrink-0"
-              title="Kembali ke bagian atas lagu"
+              title="Lompat ke awal lirik"
             >
               <ChevronsUp className="w-4 h-4" />
             </button>
@@ -706,11 +817,15 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </>
+              ) : isFinished ? (
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
               ) : (
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
               )}
             </span>
-            <span className="text-xs font-bold font-mono">{scrollSpeed.toFixed(1)}x</span>
+            <span className="text-xs font-bold font-mono">
+              {isFinished ? 'Selesai' : `${scrollSpeed.toFixed(1)}x`}
+            </span>
             <Maximize2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
           </button>
         </div>
