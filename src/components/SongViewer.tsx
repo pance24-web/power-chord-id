@@ -48,23 +48,28 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const [capoOffset, setCapoOffset] = useState<number>(song.capo || 0);
   const [fontSize, setFontSize] = useState<number>(14); // 12, 14, 16, 18
   const [autoScrollActive, setAutoScrollActive] = useState<boolean>(false);
-  const [scrollSpeed, setScrollSpeed] = useState<number>(1.0);
+  const [scrollSpeed, setScrollSpeed] = useState<number>(0.5);
   const [copied, setCopied] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
   const scrollIntervalRef = useRef<number | null>(null);
 
-  const speedOptions = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0];
+  // Speed presets from 0.0x to 1.0x
+  const speedOptions = [
+    { value: 0.0, label: '0.0x', desc: 'Diam / Jeda' },
+    { value: 0.2, label: '0.2x', desc: 'Sangat Lambat' },
+    { value: 0.4, label: '0.4x', desc: 'Lambat' },
+    { value: 0.5, label: '0.5x', desc: 'Normal' },
+    { value: 0.6, label: '0.6x', desc: 'Sedang' },
+    { value: 0.8, label: '0.8x', desc: 'Cepat' },
+    { value: 1.0, label: '1.0x', desc: 'Maksimal' },
+  ];
 
   const handleSpeedStep = (delta: number) => {
     setScrollSpeed((current) => {
-      const idx = speedOptions.indexOf(current);
-      if (idx !== -1) {
-        const nextIdx = Math.max(0, Math.min(speedOptions.length - 1, idx + delta));
-        return speedOptions[nextIdx];
-      }
-      return Math.max(0.5, Math.min(2.0, +(current + delta * 0.2).toFixed(1)));
+      const next = Math.round((current + delta * 0.1) * 10) / 10;
+      return Math.max(0.0, Math.min(1.0, next));
     });
   };
 
@@ -105,8 +110,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
   // Handle Autoscroll
   useEffect(() => {
-    if (autoScrollActive) {
-      const intervalMs = Math.max(16, Math.floor(40 / scrollSpeed));
+    if (autoScrollActive && scrollSpeed > 0) {
+      // Dynamic interval: 1.0x -> 35ms (~28px/s), 0.5x -> 70ms (~14px/s), 0.2x -> 175ms (~5.7px/s)
+      const intervalMs = Math.max(20, Math.floor(35 / scrollSpeed));
       scrollIntervalRef.current = window.setInterval(() => {
         window.scrollBy({ top: 1, behavior: 'smooth' });
       }, intervalMs);
@@ -474,22 +480,23 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                     />
                     <div className="absolute right-0 bottom-full mb-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-2 z-40 text-xs">
                       <p className="font-bold text-slate-400 px-2 py-1 text-[10px] uppercase">
-                        Kecepatan Scroll
+                        Kecepatan Scroll (0.0x - 1.0x)
                       </p>
-                      {[0.5, 1.0, 1.5, 2.0].map((s) => (
+                      {speedOptions.map((s) => (
                         <button
-                          key={s}
+                          key={s.value}
                           onClick={() => {
-                            setScrollSpeed(s);
+                            setScrollSpeed(s.value);
                             setShowSpeedMenu(false);
                           }}
-                          className={`w-full px-2 py-1.5 text-left rounded-lg font-medium cursor-pointer ${
-                            scrollSpeed === s
-                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold'
+                          className={`w-full px-2 py-1.5 text-left rounded-lg font-medium cursor-pointer flex items-center justify-between transition-colors ${
+                            scrollSpeed === s.value
+                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
                               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
-                          {s}x {s === 1.0 ? '(Normal)' : ''}
+                          <span>{s.label}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{s.desc}</span>
                         </button>
                       ))}
                     </div>
@@ -570,7 +577,11 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                   Auto Scroll
                 </p>
                 <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
-                  {autoScrollActive ? 'Sedang berjalan' : 'Dijeda (Spasi)'}
+                  {autoScrollActive
+                    ? scrollSpeed === 0
+                      ? 'Diam (0.0x)'
+                      : 'Sedang berjalan'
+                    : 'Dijeda (Spasi)'}
                 </p>
               </div>
             </div>
@@ -598,13 +609,13 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               )}
             </button>
 
-            {/* 3. Speed Stepper: [-] 1.0x [+] */}
+            {/* 3. Speed Stepper: [-] 0.5x [+] */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl sm:rounded-full p-0.5 border border-slate-200/60 dark:border-slate-700/60 shrink-0">
               <button
                 onClick={() => handleSpeedStep(-1)}
-                disabled={scrollSpeed <= 0.5}
+                disabled={scrollSpeed <= 0.0}
                 className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
-                title="Kurangi kecepatan (0.5x min)"
+                title="Kurangi kecepatan (0.0x min)"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -614,9 +625,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 <button
                   onClick={() => setShowSpeedMenu(!showSpeedMenu)}
                   className="px-2 py-0.5 text-xs font-bold font-mono text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer flex items-center gap-0.5"
-                  title="Klik untuk memilih preset kecepatan"
+                  title="Klik untuk memilih preset kecepatan (0.0x - 1.0x)"
                 >
-                  <span>{scrollSpeed}x</span>
+                  <span>{scrollSpeed.toFixed(1)}x</span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
                 </button>
 
@@ -626,27 +637,25 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                       className="fixed inset-0 z-50"
                       onClick={() => setShowSpeedMenu(false)}
                     />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-60 text-xs">
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-60 text-xs">
                       <p className="font-bold text-slate-400 px-2 py-1 text-[10px] uppercase">
-                        Pilih Kecepatan
+                        Kecepatan (0.0x - 1.0x)
                       </p>
                       {speedOptions.map((s) => (
                         <button
-                          key={s}
+                          key={s.value}
                           onClick={() => {
-                            setScrollSpeed(s);
+                            setScrollSpeed(s.value);
                             setShowSpeedMenu(false);
                           }}
                           className={`w-full px-2.5 py-1.5 text-left rounded-lg font-medium cursor-pointer transition-colors flex items-center justify-between ${
-                            scrollSpeed === s
+                            scrollSpeed === s.value
                               ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
                               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
-                          <span>{s}x</span>
-                          {s === 1.0 && (
-                            <span className="text-[10px] text-slate-400 font-normal">Normal</span>
-                          )}
+                          <span>{s.label}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{s.desc}</span>
                         </button>
                       ))}
                     </div>
@@ -656,9 +665,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
               <button
                 onClick={() => handleSpeedStep(1)}
-                disabled={scrollSpeed >= 2.0}
+                disabled={scrollSpeed >= 1.0}
                 className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
-                title="Tambah kecepatan (2.0x max)"
+                title="Tambah kecepatan (1.0x max)"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -701,7 +710,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
               )}
             </span>
-            <span className="text-xs font-bold font-mono">{scrollSpeed}x</span>
+            <span className="text-xs font-bold font-mono">{scrollSpeed.toFixed(1)}x</span>
             <Maximize2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
           </button>
         </div>
