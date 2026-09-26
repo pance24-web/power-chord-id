@@ -13,7 +13,6 @@ import {
   Eye,
   Play,
   Pause,
-  MoreHorizontal,
   ChevronDown,
   Timer,
   Activity,
@@ -22,7 +21,6 @@ import {
   Plus,
   Minimize2,
   Maximize2,
-  Sliders,
   RotateCcw,
 } from 'lucide-react';
 
@@ -491,113 +489,8 @@ export const SongViewer: React.FC<SongViewerProps> = ({
           >
             {transposedContent.split('\n').map((line, idx) => renderFormattedLine(line, idx))}
 
-            {/* Marker Akhir Lirik & Akor (Titik berhenti otomatis autoscroll) */}
-            <div
-              ref={lyricsEndRef}
-              className="mt-8 pt-4 pb-2 border-t border-dashed border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-2 text-slate-400 dark:text-slate-500 text-xs"
-            >
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Akhir lirik & akor lagu
-              </span>
-              <button
-                onClick={() => handleToggleAutoScroll(true)}
-                className="text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Mulai ulang dari awal lirik
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Controls Bar (Mockup Screen 3: Auto Scroll toggle, [▶ Mulai] button, [...]) */}
-          <div className="p-3 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
-            {/* Auto Scroll Switch Toggle */}
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={autoScrollActive}
-                onChange={() => handleToggleAutoScroll()}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 relative"></div>
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Auto Scroll
-              </span>
-            </label>
-
-            {/* Action Buttons: [ ▶ Mulai / ⏸ Jeda / ↺ Ulangi ] & [...] */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleToggleAutoScroll()}
-                className={`px-5 py-2 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-2xs cursor-pointer transition-all active:scale-95 ${
-                  isFinished
-                    ? 'bg-emerald-600 hover:bg-emerald-700'
-                    : autoScrollActive
-                    ? 'bg-amber-500 hover:bg-amber-600'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {autoScrollActive ? (
-                  <>
-                    <Pause className="w-3.5 h-3.5 fill-current" />
-                    <span>Jeda</span>
-                  </>
-                ) : isFinished ? (
-                  <>
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Ulangi dari Awal</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Mulai</span>
-                  </>
-                )}
-              </button>
-
-              {/* Speed & Options (...) */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                  className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
-                  title="Pengaturan scroll"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-
-                {showSpeedMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-30"
-                      onClick={() => setShowSpeedMenu(false)}
-                    />
-                    <div className="absolute right-0 bottom-full mb-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-2 z-40 text-xs">
-                      <p className="font-bold text-slate-400 px-2 py-1 text-[10px] uppercase">
-                        Kecepatan Scroll (0.0x - 1.0x)
-                      </p>
-                      {speedOptions.map((s) => (
-                        <button
-                          key={s.value}
-                          onClick={() => {
-                            setScrollSpeed(s.value);
-                            setShowSpeedMenu(false);
-                          }}
-                          className={`w-full px-2 py-1.5 text-left rounded-lg font-medium cursor-pointer flex items-center justify-between transition-colors ${
-                            scrollSpeed === s.value
-                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          <span>{s.label}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{s.desc}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            {/* Titik penanda akhir lirik untuk floating autoscroll */}
+            <div ref={lyricsEndRef} className="h-4" />
           </div>
         </div>
 
