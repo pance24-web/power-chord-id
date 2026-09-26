@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PowerChordLogo } from './PowerChordLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { ThemeType } from '../types/chord';
-import { Search, Moon, Sun, SlidersHorizontal, Menu, X, Heart, Radio, BookOpen, Plus, Send } from 'lucide-react';
+import { getMusicianOverviewStats } from '../utils/realtimeStats';
+import { Search, Moon, Sun, SlidersHorizontal, Menu, X, Heart, Radio, BookOpen, Plus, Send, Timer, Activity } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: 'home' | 'catalog' | 'artists';
@@ -33,6 +34,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [featuresMenuOpen, setFeaturesMenuOpen] = useState(false);
+  const [stats, setStats] = useState(() => getMusicianOverviewStats(0, favoritesCount));
+
+  useEffect(() => {
+    const updateStats = () => setStats(getMusicianOverviewStats(0, favoritesCount));
+    updateStats();
+    window.addEventListener('powerchord:stats_updated', updateStats);
+    return () => {
+      window.removeEventListener('powerchord:stats_updated', updateStats);
+    };
+  }, [favoritesCount]);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
@@ -185,6 +196,31 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <Plus className="w-3.5 h-3.5 text-blue-500" />
                     Tambah Chord Sendiri
                   </button>
+
+                  {/* Realtime Practice Statistics Summary */}
+                  {stats.songsViewed > 0 && (
+                    <div className="mx-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                          <span>Statistik Latihan</span>
+                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 text-center">
+                          <div className="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">{stats.songsViewed}</p>
+                            <p className="text-[10px] text-slate-400">Lagu Dibuka</p>
+                          </div>
+                          <div className="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400">{stats.formattedTotalPractice}</p>
+                            <p className="text-[10px] text-slate-400">Waktu Latihan</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

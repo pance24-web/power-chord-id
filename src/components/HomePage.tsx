@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Song } from '../types/chord';
+import { getSongTotalViews, formatCount } from '../utils/realtimeStats';
 import { Search, ChevronDown, ChevronRight, Eye, Heart, BookOpen, Users, Send } from 'lucide-react';
 
 interface HomePageProps {
@@ -40,6 +41,16 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [heroSearch, setHeroSearch] = useState('');
   const [activeGenre, setActiveGenre] = useState('Semua');
   const [showMoreGenres, setShowMoreGenres] = useState(false);
+  const [statsVersion, setStatsVersion] = useState(0);
+
+  // Sync when song views or practice times update in real-time
+  useEffect(() => {
+    const handleStatsChange = () => setStatsVersion((v) => v + 1);
+    window.addEventListener('powerchord:stats_updated', handleStatsChange);
+    return () => {
+      window.removeEventListener('powerchord:stats_updated', handleStatsChange);
+    };
+  }, []);
 
   const handleHeroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,14 +59,19 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
-  // 10 Popular Songs matching the mockup
+  // 10 Popular Songs sorted by real-time views
   const popularSongs = useMemo(() => {
     let list = [...songs];
     if (activeGenre !== 'Semua') {
       list = list.filter((s) => s.genre?.toLowerCase() === activeGenre.toLowerCase());
     }
+    list.sort((a, b) => {
+      const viewsA = getSongTotalViews(a.id, a.views);
+      const viewsB = getSongTotalViews(b.id, b.views);
+      return viewsB - viewsA;
+    });
     return list.slice(0, 10);
-  }, [songs, activeGenre]);
+  }, [songs, activeGenre, statsVersion]);
 
   return (
     <div className="space-y-12 pb-16">
@@ -144,9 +160,18 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* 2. Lagu Populer Section (2 columns on desktop, 1 on mobile, 10 items) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Lagu Populer
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Lagu Populer
+            </h2>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+              </span>
+              Realtime
+            </span>
+          </div>
           <button
             onClick={() => onNavigateCatalog()}
             className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
@@ -159,6 +184,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {popularSongs.map((song, index) => {
             const isFav = favorites.includes(song.id);
+            const realtimeViews = getSongTotalViews(song.id, song.views);
             return (
               <div
                 key={song.id}
@@ -180,19 +206,20 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </div>
                 </div>
 
-                {/* Right: Genre Badge + Stats (👁 views, ♡ likes) */}
+                {/* Right: Genre Badge + Realtime Stats (👁 views, ♡ likes) */}
                 <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
                   {song.genre && (
                     <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
                       {song.genre}
                     </span>
                   )}
-                  {song.views && (
-                    <span className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>{song.views}</span>
-                    </span>
-                  )}
+                  <span
+                    className="hidden sm:flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium"
+                    title={`Total pembaca: ${realtimeViews.toLocaleString('id-ID')} tayangan`}
+                  >
+                    <Eye className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{formatCount(realtimeViews)}</span>
+                  </span>
                   <button
                     onClick={(e) => onToggleFavorite(e, song.id)}
                     className={`flex items-center gap-1 text-[11px] font-medium p-1 rounded-full transition-colors cursor-pointer ${

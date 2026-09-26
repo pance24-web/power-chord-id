@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Song } from '../types/chord';
-import { Search, Heart, ChevronRight, FileQuestion } from 'lucide-react';
+import { getSongTotalViews, formatCount } from '../utils/realtimeStats';
+import { Search, Heart, ChevronRight, FileQuestion, Eye } from 'lucide-react';
 
 export type SortOption = 'recent' | 'popular' | 'title' | 'artist';
 
@@ -43,8 +44,17 @@ export const SongList: React.FC<SongListProps> = ({
   const [search, setSearch] = useState(initialSearch);
   const [selectedGenre, setSelectedGenre] = useState<string>(initialGenre);
   const [selectedLetter, setSelectedLetter] = useState<string>(initialLetter);
-  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(filterFavoritesOnly);
+  const [statsVersion, setStatsVersion] = useState(0);
+
+  useEffect(() => {
+    const handleStatsChange = () => setStatsVersion((v) => v + 1);
+    window.addEventListener('powerchord:stats_updated', handleStatsChange);
+    return () => {
+      window.removeEventListener('powerchord:stats_updated', handleStatsChange);
+    };
+  }, []);
 
   const filteredSongs = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -78,8 +88,8 @@ export const SongList: React.FC<SongListProps> = ({
           return a.artist.localeCompare(b.artist, 'id', { sensitivity: 'base' });
         }
         if (sortBy === 'popular') {
-          const viewsA = parseFloat(a.views?.replace('k', '') || '0');
-          const viewsB = parseFloat(b.views?.replace('k', '') || '0');
+          const viewsA = getSongTotalViews(a.id, a.views);
+          const viewsB = getSongTotalViews(b.id, b.views);
           return viewsB - viewsA;
         }
         // 'recent'
@@ -88,7 +98,7 @@ export const SongList: React.FC<SongListProps> = ({
         if (timeA !== timeB) return timeB - timeA;
         return 0;
       });
-  }, [songs, search, selectedGenre, selectedLetter, showFavoritesOnly, favorites, sortBy]);
+  }, [songs, search, selectedGenre, selectedLetter, showFavoritesOnly, favorites, sortBy, statsVersion]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -201,9 +211,10 @@ export const SongList: React.FC<SongListProps> = ({
           {/* Table Header (Desktop) */}
           <div className="hidden sm:grid grid-cols-12 px-5 py-3 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             <div className="col-span-1">#</div>
-            <div className="col-span-5">Judul Lagu</div>
+            <div className="col-span-4">Judul Lagu</div>
             <div className="col-span-3">Artis</div>
             <div className="col-span-2">Genre</div>
+            <div className="col-span-1">Tayangan</div>
             <div className="col-span-1 text-right">Aksi</div>
           </div>
 
@@ -211,6 +222,7 @@ export const SongList: React.FC<SongListProps> = ({
           <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {filteredSongs.map((song, index) => {
               const isFav = favorites.includes(song.id);
+              const realtimeViews = getSongTotalViews(song.id, song.views);
               return (
                 <div
                   key={song.id}
@@ -223,12 +235,17 @@ export const SongList: React.FC<SongListProps> = ({
                   </div>
 
                   {/* Judul Lagu */}
-                  <div className="col-span-5 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                  <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
                     {song.title}
-                    {/* Mobile artist indicator */}
-                    <span className="block sm:hidden text-xs font-normal text-slate-500 truncate mt-0.5">
-                      {song.artist}
-                    </span>
+                    {/* Mobile artist & stats indicator */}
+                    <div className="flex sm:hidden items-center gap-2 text-xs font-normal text-slate-500 truncate mt-0.5">
+                      <span>{song.artist}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                        <Eye className="w-3 h-3 text-blue-500" />
+                        <span>{formatCount(realtimeViews)}</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Artis (Desktop) */}
@@ -243,6 +260,12 @@ export const SongList: React.FC<SongListProps> = ({
                         {song.genre}
                       </span>
                     )}
+                  </div>
+
+                  {/* Tayangan Realtime (Desktop) */}
+                  <div className="hidden sm:flex col-span-1 items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <Eye className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{formatCount(realtimeViews)}</span>
                   </div>
 
                   {/* Actions: Heart + Chevron */}

@@ -3,6 +3,7 @@ import { Song } from '../types/chord';
 import { transposeText, transposeSingleChord } from '../utils/chordTransposer';
 import { ChordHoverToken } from './ChordHoverToken';
 import { cacheViewedSong } from '../utils/offlineStorage';
+import { useSongRealtimeStats } from '../utils/realtimeStats';
 import {
   ArrowLeft,
   Heart,
@@ -14,6 +15,14 @@ import {
   Pause,
   MoreHorizontal,
   ChevronDown,
+  Timer,
+  Activity,
+  ChevronsUp,
+  Minus,
+  Plus,
+  Minimize2,
+  Maximize2,
+  Sliders,
 } from 'lucide-react';
 
 interface SongViewerProps {
@@ -43,7 +52,48 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
+  const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
   const scrollIntervalRef = useRef<number | null>(null);
+
+  const speedOptions = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0];
+
+  const handleSpeedStep = (delta: number) => {
+    setScrollSpeed((current) => {
+      const idx = speedOptions.indexOf(current);
+      if (idx !== -1) {
+        const nextIdx = Math.max(0, Math.min(speedOptions.length - 1, idx + delta));
+        return speedOptions[nextIdx];
+      }
+      return Math.max(0.5, Math.min(2.0, +(current + delta * 0.2).toFixed(1)));
+    });
+  };
+
+  // Keyboard shortcut: Spacebar to toggle autoscroll (if not in input)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setAutoScrollActive((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Real-time calculated statistics
+  const {
+    formattedViews,
+    preciseViews,
+    formattedLikes,
+    liveMusicians,
+    formattedPracticeTime,
+    isPracticing,
+    togglePracticeTimer,
+  } = useSongRealtimeStats(song.id, song.views, song.likes, isFavorite);
 
   useEffect(() => {
     cacheViewedSong(song);
@@ -206,25 +256,56 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             )}
           </div>
 
-          {/* Info Labels: 👁 views, ♡ likes, Bagikan */}
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
-            <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" />
-              <span>{song.views || '76.4k'}</span>
+          {/* Info Labels: Realtime Live Musicians, 👁 views, ♡ likes, ⏱ Waktu Latihan, Bagikan */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {/* Live active musicians badge */}
+            <div
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 text-[11px] font-semibold"
+              title="Musisi yang sedang aktif membuka lagu ini secara bersamaan"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>{liveMusicians} musisi aktif</span>
+            </div>
+
+            {/* Realtime Views */}
+            <span
+              className="flex items-center gap-1 hover:text-blue-600 transition-colors cursor-help"
+              title={`Total tayangan realtime: ${preciseViews} kali dibaca`}
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-500" />
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{formattedViews}</span>
             </span>
 
+            {/* Realtime Likes */}
             <button
               onClick={(e) => onToggleFavorite(e, song.id)}
               className={`flex items-center gap-1 transition-colors cursor-pointer ${
                 isFavorite
                   ? 'text-rose-500 font-bold'
-                  : 'hover:text-rose-500'
+                  : 'hover:text-rose-500 text-slate-600 dark:text-slate-300'
               }`}
+              title={isFavorite ? 'Tersimpan di favorit' : 'Sukai & simpan ke favorit'}
             >
               <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
-              <span>{song.likes || '3.2k'}</span>
+              <span>{formattedLikes}</span>
             </button>
 
+            {/* Realtime Practice Stopwatch */}
+            <button
+              onClick={togglePracticeTimer}
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors cursor-pointer"
+              title={isPracticing ? 'Klik untuk menjeda stopwatch latihan' : 'Klik untuk melanjutkan stopwatch latihan'}
+            >
+              <Timer className={`w-3 h-3 ${isPracticing ? 'animate-pulse text-blue-600' : 'text-slate-400'}`} />
+              <span className="font-mono text-[11px]">
+                {formattedPracticeTime}
+              </span>
+            </button>
+
+            {/* Share */}
             <button
               onClick={handleShare}
               className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
@@ -465,6 +546,166 @@ export const SongViewer: React.FC<SongViewerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ======================================================== */}
+      {/* FLOATING AUTO SCROLL CONTROLLER (TAMPILAN MELAYANG) */}
+      {/* ======================================================== */}
+      {!isFloatingMinimized ? (
+        <div className="fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-auto max-w-xl transition-all duration-300">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/90 shadow-2xl rounded-2xl sm:rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between sm:justify-center gap-2 sm:gap-3.5 ring-1 ring-black/5 dark:ring-white/10">
+            {/* 1. Status Indicator & Mode */}
+            <div className="flex items-center gap-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-slate-800">
+              <span className="relative flex h-2.5 w-2.5">
+                {autoScrollActive && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    autoScrollActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                  }`}
+                ></span>
+              </span>
+              <div className="hidden xs:block text-left">
+                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-none">
+                  Auto Scroll
+                </p>
+                <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                  {autoScrollActive ? 'Sedang berjalan' : 'Dijeda (Spasi)'}
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Main Play / Pause Button */}
+            <button
+              onClick={() => setAutoScrollActive((prev) => !prev)}
+              className={`px-3.5 sm:px-5 py-2 rounded-xl sm:rounded-full text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0 ${
+                autoScrollActive
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400/30 shadow-amber-500/20'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white ring-2 ring-blue-500/30 shadow-blue-500/20'
+              }`}
+              title="Spasi: Jeda atau Mulai auto scroll"
+            >
+              {autoScrollActive ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 fill-current" />
+                  <span>Jeda</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Mulai</span>
+                </>
+              )}
+            </button>
+
+            {/* 3. Speed Stepper: [-] 1.0x [+] */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl sm:rounded-full p-0.5 border border-slate-200/60 dark:border-slate-700/60 shrink-0">
+              <button
+                onClick={() => handleSpeedStep(-1)}
+                disabled={scrollSpeed <= 0.5}
+                className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
+                title="Kurangi kecepatan (0.5x min)"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Speed button with popover options */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                  className="px-2 py-0.5 text-xs font-bold font-mono text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer flex items-center gap-0.5"
+                  title="Klik untuk memilih preset kecepatan"
+                >
+                  <span>{scrollSpeed}x</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </button>
+
+                {showSpeedMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-50"
+                      onClick={() => setShowSpeedMenu(false)}
+                    />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-60 text-xs">
+                      <p className="font-bold text-slate-400 px-2 py-1 text-[10px] uppercase">
+                        Pilih Kecepatan
+                      </p>
+                      {speedOptions.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setScrollSpeed(s);
+                            setShowSpeedMenu(false);
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-left rounded-lg font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                            scrollSpeed === s
+                              ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>{s}x</span>
+                          {s === 1.0 && (
+                            <span className="text-[10px] text-slate-400 font-normal">Normal</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={() => handleSpeedStep(1)}
+                disabled={scrollSpeed >= 2.0}
+                className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
+                title="Tambah kecepatan (2.0x max)"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* 4. Quick Scroll to Top */}
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="p-2 rounded-xl sm:rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors shrink-0"
+              title="Kembali ke bagian atas lagu"
+            >
+              <ChevronsUp className="w-4 h-4" />
+            </button>
+
+            {/* 5. Minimize to Pill Button */}
+            <button
+              onClick={() => setIsFloatingMinimized(true)}
+              className="p-2 rounded-xl sm:rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+              title="Perkecil panel melayang"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Minimized floating button in bottom right */
+        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">
+          <button
+            onClick={() => setIsFloatingMinimized(false)}
+            className="group flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 cursor-pointer transition-all active:scale-95 ring-1 ring-black/5"
+            title="Buka panel Auto Scroll melayang"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              {autoScrollActive ? (
+                <>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </>
+              ) : (
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
+              )}
+            </span>
+            <span className="text-xs font-bold font-mono">{scrollSpeed}x</span>
+            <Maximize2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
