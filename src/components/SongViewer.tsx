@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Song } from '../types/chord';
 import { transposeText, transposeSingleChord } from '../utils/chordTransposer';
 import { ChordHoverToken } from './ChordHoverToken';
@@ -15,13 +15,14 @@ import {
   Pause,
   ChevronDown,
   Timer,
-  Activity,
   ChevronsUp,
   Minus,
   Plus,
   Minimize2,
   Maximize2,
   RotateCcw,
+  Sliders,
+  Sparkles,
 } from 'lucide-react';
 
 interface SongViewerProps {
@@ -43,9 +44,27 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   onToggleFavorite,
   onOpenChordModal,
 }) => {
+  // Transpose & Capo state
   const [transposeStep, setTransposeStep] = useState<number>(0);
   const [capoOffset, setCapoOffset] = useState<number>(song.capo || 0);
-  const [fontSize, setFontSize] = useState<number>(14); // 12, 14, 16, 18
+
+  // Font size with localStorage persistence
+  const [fontSize, setFontSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('powerchord_font_size');
+      if (saved) return Number(saved);
+    }
+    return 14;
+  });
+
+  const handleFontSizeChange = (size: number) => {
+    setFontSize(size);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('powerchord_font_size', String(size));
+    }
+  };
+
+  // AutoScroll state & refs
   const [autoScrollActive, setAutoScrollActive] = useState<boolean>(false);
   const [scrollSpeed, setScrollSpeed] = useState<number>(0.5);
   const [copied, setCopied] = useState<boolean>(false);
@@ -53,29 +72,71 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
-  const scrollIntervalRef = useRef<number | null>(null);
+  const [scrollProgress, setScrollProgress] = useState<number>(0);
+
+  // RAF engine refs
+  const animFrameRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+  const subPixelRemainderRef = useRef<number>(0);
+
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
   const lyricsEndRef = useRef<HTMLDivElement | null>(null);
 
   // Speed presets from 0.0x to 1.0x
-  const speedOptions = [
-    { value: 0.0, label: '0.0x', desc: 'Diam / Jeda' },
-    { value: 0.2, label: '0.2x', desc: 'Sangat Lambat' },
-    { value: 0.4, label: '0.4x', desc: 'Lambat' },
-    { value: 0.5, label: '0.5x', desc: 'Normal' },
-    { value: 0.6, label: '0.6x', desc: 'Sedang' },
-    { value: 0.8, label: '0.8x', desc: 'Cepat' },
-    { value: 1.0, label: '1.0x', desc: 'Maksimal' },
-  ];
+  const speedOptions = useMemo(
+    () => [
+      { value: 0.0, label: '0.0x', desc: 'Diam / Jeda' },
+      { value: 0.2, label: '0.2x', desc: 'Sangat Lambat' },
+      { value: 0.4, label: '0.4x', desc: 'Lambat' },
+      { value: 0.5, label: '0.5x', desc: 'Normal' },
+      { value: 0.6, label: '0.6x', desc: 'Sedang' },
+      { value: 0.8, label: '0.8x', desc: 'Cepat' },
+      { value: 1.0, label: '1.0x', desc: 'Maksimal' },
+    ],
+    []
+  );
 
-  const handleSpeedStep = (delta: number) => {
+  const handleSpeedStep = useCallback((delta: number) => {
     setScrollSpeed((current) => {
       const next = Math.round((current + delta * 0.1) * 10) / 10;
       return Math.max(0.0, Math.min(1.0, next));
     });
-  };
+  }, []);
 
-  const scrollToLyricsStart = () => {
+  // Calculate live reading progress through lyrics
+  const updateProgress = useCallback(() => {
+    if (!lyricsContainerRef.current || !lyricsEndRef.current) return;
+    const containerTop = lyricsContainerRef.current.getBoundingClientRect().top + window.scrollY;
+    const endTop = lyricsEndRef.current.getBoundingClientRect().top + window.scrollY;
+    const totalDist = endTop - containerTop;
+    if (totalDist <= 0) {
+      setScrollProgress(0);
+      return;
+    }
+    const currentPos = window.scrollY + window.innerHeight - 100 - containerTop;
+    const pct = Math.max(0, Math.min(100, Math.round((currentPos / totalDist) * 100)));
+    setScrollProgress(pct);
+  }, []);
+
+  // Listen to window scroll to keep progress indicator accurate
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateProgress();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    updateProgress();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [updateProgress]);
+
+  // Jump smoothly to start of lyrics
+  const scrollToLyricsStart = useCallback(() => {
     if (lyricsContainerRef.current) {
       const navbarOffset = 70;
       const targetY = lyricsContainerRef.current.getBoundingClientRect().top + window.scrollY - navbarOffset;
@@ -83,52 +144,66 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, []);
 
-  const handleToggleAutoScroll = (forceRestart = false) => {
-    if (autoScrollActive && !forceRestart) {
-      setAutoScrollActive(false);
-      return;
-    }
-
-    setIsFinished(false);
-
-    // If starting autoscroll: check if we should scroll to the start of lyrics
-    if (lyricsContainerRef.current) {
-      const lyricsRect = lyricsContainerRef.current.getBoundingClientRect();
-      const endRect = lyricsEndRef.current?.getBoundingClientRect();
-      const viewportThreshold = window.innerHeight - 80;
-      const isAtOrPastEnd = endRect ? endRect.bottom <= viewportThreshold : false;
-      const isAboveLyrics = lyricsRect.top > 120; // user is looking at top/header
-
-      if (forceRestart || isAtOrPastEnd || isAboveLyrics) {
-        scrollToLyricsStart();
-        // Give smooth scroll 350ms to reach the start of lyrics, then start scrolling
-        setTimeout(() => {
-          setAutoScrollActive(true);
-        }, 350);
+  // Toggle autoscroll with auto-targeting
+  const handleToggleAutoScroll = useCallback(
+    (forceRestart = false) => {
+      if (autoScrollActive && !forceRestart) {
+        setAutoScrollActive(false);
         return;
       }
-    }
 
-    setAutoScrollActive(true);
-  };
+      setIsFinished(false);
 
-  // Keyboard shortcut: Spacebar to toggle autoscroll (if not in input)
+      if (lyricsContainerRef.current) {
+        const lyricsRect = lyricsContainerRef.current.getBoundingClientRect();
+        const endRect = lyricsEndRef.current?.getBoundingClientRect();
+        const viewportThreshold = window.innerHeight - 80;
+        const isAtOrPastEnd = endRect ? endRect.bottom <= viewportThreshold : false;
+        const isAboveLyrics = lyricsRect.top > 120;
+
+        if (forceRestart || isAtOrPastEnd || isAboveLyrics) {
+          scrollToLyricsStart();
+          setTimeout(() => {
+            setAutoScrollActive(true);
+          }, 350);
+          return;
+        }
+      }
+
+      setAutoScrollActive(true);
+    },
+    [autoScrollActive, scrollToLyricsStart]
+  );
+
+  // Keyboard shortcuts center
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
         return;
       }
+
       if (e.code === 'Space') {
         e.preventDefault();
         handleToggleAutoScroll();
+      } else if (e.key === 'ArrowUp' || e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleSpeedStep(1);
+      } else if (e.key === 'ArrowDown' || e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleSpeedStep(-1);
+      } else if (e.key === 'r' || e.key === 'R' || e.key === 'Home') {
+        e.preventDefault();
+        handleToggleAutoScroll(true);
+      } else if (e.key === 'Escape') {
+        setShowSpeedMenu(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [autoScrollActive, isFinished]);
+  }, [handleToggleAutoScroll, handleSpeedStep]);
 
   // Real-time calculated statistics
   const {
@@ -141,6 +216,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     togglePracticeTimer,
   } = useSongRealtimeStats(song.id, song.views, song.likes, isFavorite);
 
+  // Reset states when song changes
   useEffect(() => {
     cacheViewedSong(song);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -148,145 +224,225 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     setCapoOffset(song.capo || 0);
     setAutoScrollActive(false);
     setIsFinished(false);
+    setScrollProgress(0);
   }, [song]);
 
-  // Handle Autoscroll: begins from start and stops at the end of lyrics
+  // Fluid 60fps/120fps requestAnimationFrame AutoScroll Engine
   useEffect(() => {
-    if (autoScrollActive && scrollSpeed > 0) {
-      setIsFinished(false);
-      // Dynamic interval: 1.0x -> 32ms (~31px/s), 0.5x -> 65ms (~15px/s), 0.2x -> 160ms (~6px/s)
-      const intervalMs = Math.max(20, Math.floor(32 / scrollSpeed));
-      scrollIntervalRef.current = window.setInterval(() => {
-        // Check if bottom of lyrics has reached the viewport reading area
-        if (lyricsEndRef.current) {
-          const rect = lyricsEndRef.current.getBoundingClientRect();
-          const viewportThreshold = window.innerHeight - 80;
-          if (rect.bottom <= viewportThreshold) {
-            // Reached the end of lyrics: stop autoscroll automatically
-            setAutoScrollActive(false);
-            setIsFinished(true);
-            return;
-          }
-        } else {
-          const scrollBottom = window.innerHeight + window.scrollY;
-          if (scrollBottom >= document.documentElement.scrollHeight - 10) {
-            setAutoScrollActive(false);
-            setIsFinished(true);
-            return;
-          }
-        }
-
-        window.scrollBy({ top: 1, behavior: 'auto' });
-      }, intervalMs);
-    } else {
-      if (scrollIntervalRef.current) {
-        clearInterval(scrollIntervalRef.current);
-        scrollIntervalRef.current = null;
+    if (!autoScrollActive || scrollSpeed <= 0) {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
+      lastTimeRef.current = null;
+      subPixelRemainderRef.current = 0;
+      return;
     }
+
+    setIsFinished(false);
+    lastTimeRef.current = null;
+    subPixelRemainderRef.current = 0;
+
+    const basePixelsPerSec = 36; // 1.0x = ~36px/sec, 0.5x = 18px/sec, 0.2x = 7.2px/sec
+    const currentSpeedRate = scrollSpeed * basePixelsPerSec;
+
+    const step = (timestamp: number) => {
+      if (lastTimeRef.current === null) {
+        lastTimeRef.current = timestamp;
+      }
+
+      // Delta time capped at 100ms to avoid huge jump on tab focus
+      const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1);
+      lastTimeRef.current = timestamp;
+
+      // Check if end of lyrics is reached
+      if (lyricsEndRef.current) {
+        const rect = lyricsEndRef.current.getBoundingClientRect();
+        const viewportThreshold = window.innerHeight - 80;
+        if (rect.bottom <= viewportThreshold) {
+          setAutoScrollActive(false);
+          setIsFinished(true);
+          updateProgress();
+          return;
+        }
+      } else {
+        const scrollBottom = window.innerHeight + window.scrollY;
+        if (scrollBottom >= document.documentElement.scrollHeight - 10) {
+          setAutoScrollActive(false);
+          setIsFinished(true);
+          updateProgress();
+          return;
+        }
+      }
+
+      // Sub-pixel delta accumulator for perfectly fluid scrolling
+      const desiredPx = currentSpeedRate * dt + subPixelRemainderRef.current;
+      const wholePx = Math.floor(desiredPx);
+      subPixelRemainderRef.current = desiredPx - wholePx;
+
+      if (wholePx > 0) {
+        window.scrollBy({ top: wholePx, behavior: 'auto' });
+      }
+
+      animFrameRef.current = requestAnimationFrame(step);
+    };
+
+    animFrameRef.current = requestAnimationFrame(step);
+
     return () => {
-      if (scrollIntervalRef.current) {
-        clearInterval(scrollIntervalRef.current);
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
     };
-  }, [autoScrollActive, scrollSpeed]);
+  }, [autoScrollActive, scrollSpeed, updateProgress]);
 
-  // Transposed song content
-  const transposedContent = transposeText(song.content, transposeStep);
+  // Transposed song content memoized to prevent re-transposing on every stopwatch tick
+  const transposedContent = useMemo(() => {
+    return transposeText(song.content, transposeStep);
+  }, [song.content, transposeStep]);
 
-  const handleCopy = () => {
+  // Sounding key calculation for Capo
+  const soundingKey = useMemo(() => {
+    if (!song.originalKey || capoOffset === 0) return null;
+    return transposeSingleChord(song.originalKey, capoOffset);
+  }, [song.originalKey, capoOffset]);
+
+  // Copy with rich info
+  const handleCopy = useCallback(() => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(`${song.title} - ${song.artist}\nKunci: ${song.originalKey}\n\n${transposedContent}`);
+      const capoInfo = capoOffset > 0 ? ` (Capo di fret ${capoOffset})` : '';
+      const transposeInfo =
+        transposeStep !== 0 ? ` (Transpose: ${transposeStep > 0 ? `+${transposeStep}` : transposeStep})` : '';
+      const header = `${song.title} - ${song.artist}\nNada Dasar: ${song.originalKey}${capoInfo}${transposeInfo}\n\n`;
+      navigator.clipboard.writeText(`${header}${transposedContent}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, [song.title, song.artist, song.originalKey, capoOffset, transposeStep, transposedContent]);
 
-  const handleShare = () => {
+  // Share with Web Share API and clipboard fallback
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: `${song.title} - ${song.artist} | PowerChord`,
+      text: `Kunci gitar & lirik lagu ${song.title} oleh ${song.artist}`,
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       setShareToast(true);
       setTimeout(() => setShareToast(false), 2000);
     }
-  };
+  }, [song.title, song.artist]);
 
-  // Related songs (Mockup Screen 3 & 7)
-  const relatedSongs = allSongs
-    .filter((s) => s.id !== song.id)
-    .slice(0, 5);
+  // Related songs memoized
+  const relatedSongs = useMemo(() => {
+    return allSongs.filter((s) => s.id !== song.id).slice(0, 5);
+  }, [allSongs, song.id]);
 
-  // Render formatted lines: detects bracketed chords [Am] or chord lines
-  const renderFormattedLine = (line: string, lineIndex: number) => {
-    if (!line.trim()) {
-      return <div key={lineIndex} className="h-4" />;
-    }
+  // Render formatted lines: memoized line tokenizer
+  const renderFormattedLine = useCallback(
+    (line: string, lineIndex: number) => {
+      if (!line.trim()) {
+        return <div key={lineIndex} className="h-4" />;
+      }
 
-    // Section header
-    if (/^\s*(Intro|Verse|Chorus|Pre-Chorus|Bridge|Interlude|Outro|Solo|Reff)[^:]*:/i.test(line) || /^\s*\[(Intro|Verse|Chorus|Pre-Chorus|Bridge|Interlude|Outro|Solo|Reff)[^\]]*\]\s*$/i.test(line)) {
-      return (
-        <div key={lineIndex} className="pt-3 pb-1 font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 font-sans">
-          {line.trim()}
-        </div>
-      );
-    }
+      // Section header
+      if (
+        /^\s*(Intro|Verse|Chorus|Pre-Chorus|Bridge|Interlude|Outro|Solo|Reff)[^:]*:/i.test(line) ||
+        /^\s*\[(Intro|Verse|Chorus|Pre-Chorus|Bridge|Interlude|Outro|Solo|Reff)[^\]]*\]\s*$/i.test(line)
+      ) {
+        return (
+          <div
+            key={lineIndex}
+            className="pt-3 pb-1 font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 font-sans"
+          >
+            {line.trim()}
+          </div>
+        );
+      }
 
-    // Bracketed chords like [C]
-    if (line.includes('[') && line.includes(']')) {
-      const parts = line.split(/(\[[A-G][b#]?[^\]]*\])/g);
-      return (
-        <div key={lineIndex} className="leading-loose font-mono">
-          {parts.map((part, pIdx) => {
-            const chordMatch = part.match(/^\[([A-G][b#]?[^\]]*)\]$/);
-            if (chordMatch) {
+      // Bracketed chords like [C]
+      if (line.includes('[') && line.includes(']')) {
+        const parts = line.split(/(\[[A-G][b#]?[^\]]*\])/g);
+        return (
+          <div key={lineIndex} className="leading-loose font-mono">
+            {parts.map((part, pIdx) => {
+              const chordMatch = part.match(/^\[([A-G][b#]?[^\]]*)\]$/);
+              if (chordMatch) {
+                return (
+                  <ChordHoverToken
+                    key={pIdx}
+                    chord={chordMatch[1]}
+                    onClickChord={onOpenChordModal}
+                  />
+                );
+              }
               return (
-                <ChordHoverToken
-                  key={pIdx}
-                  chord={chordMatch[1]}
-                  onClickChord={onOpenChordModal}
-                />
+                <span key={pIdx} className="text-slate-800 dark:text-slate-200">
+                  {part}
+                </span>
               );
-            }
-            return <span key={pIdx} className="text-slate-800 dark:text-slate-200">{part}</span>;
-          })}
-        </div>
-      );
-    }
+            })}
+          </div>
+        );
+      }
 
-    // Tokenized line check: chord line vs lyric line
-    const words = line.split(/(\s+)/);
-    const nonSpaces = words.filter((w) => w.trim().length > 0);
-    const chordCount = nonSpaces.filter((w) => /^[A-G][b#]?(m|maj|min|dim|aug|sus|add|7|9|11|13|6|2)*(\/[A-G][b#]?)?$/.test(w.trim())).length;
-    const isChordLine = nonSpaces.length > 0 && chordCount >= Math.ceil(nonSpaces.length * 0.7);
+      // Tokenized line check: chord line vs lyric line
+      const words = line.split(/(\s+)/);
+      const nonSpaces = words.filter((w) => w.trim().length > 0);
+      const chordCount = nonSpaces.filter((w) =>
+        /^[A-G][b#]?(m|maj|min|dim|aug|sus|add|7|9|11|13|6|2)*(\/[A-G][b#]?)?$/.test(w.trim())
+      ).length;
+      const isChordLine = nonSpaces.length > 0 && chordCount >= Math.ceil(nonSpaces.length * 0.7);
 
-    if (isChordLine) {
+      if (isChordLine) {
+        return (
+          <div
+            key={lineIndex}
+            className="font-mono font-bold leading-relaxed whitespace-pre text-blue-600 dark:text-blue-400"
+          >
+            {words.map((w, wIdx) => {
+              if (/^[A-G][b#]?[a-zA-Z0-9#\+/\-]*$/.test(w.trim())) {
+                return (
+                  <ChordHoverToken
+                    key={wIdx}
+                    chord={w.trim()}
+                    onClickChord={onOpenChordModal}
+                  />
+                );
+              }
+              return <span key={wIdx}>{w}</span>;
+            })}
+          </div>
+        );
+      }
+
       return (
-        <div key={lineIndex} className="font-mono font-bold leading-relaxed whitespace-pre text-blue-600 dark:text-blue-400">
-          {words.map((w, wIdx) => {
-            if (/^[A-G][b#]?[a-zA-Z0-9#\+/\-]*$/.test(w.trim())) {
-              return (
-                <ChordHoverToken
-                  key={wIdx}
-                  chord={w.trim()}
-                  onClickChord={onOpenChordModal}
-                />
-              );
-            }
-            return <span key={wIdx}>{w}</span>;
-          })}
+        <div key={lineIndex} className="font-sans leading-relaxed text-slate-800 dark:text-slate-200">
+          {line}
         </div>
       );
-    }
+    },
+    [onOpenChordModal]
+  );
 
-    return (
-      <div key={lineIndex} className="font-sans leading-relaxed text-slate-800 dark:text-slate-200">
-        {line}
-      </div>
-    );
-  };
+  // Memoized parsed content lines: prevents re-running regex tokenizer on practice stopwatch ticks!
+  const parsedContentLines = useMemo(() => {
+    return transposedContent.split('\n').map((line, idx) => renderFormattedLine(line, idx));
+  }, [transposedContent, renderFormattedLine]);
 
   return (
     <div className="space-y-6 pb-28">
-      {/* Back button (Mockup Screen 3: ← Kembali ke katalog) */}
+      {/* Back button */}
       <button
         onClick={onBack}
         className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
@@ -295,7 +451,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
         <span>Kembali ke katalog</span>
       </button>
 
-      {/* Song Header & Metadata (Mockup Screen 3) */}
+      {/* Song Header & Metadata */}
       <div className="space-y-2">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
           {song.title}
@@ -306,7 +462,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
         {/* Badges & Stats Row */}
         <div className="flex flex-wrap items-center gap-3 pt-1">
-          {/* Genre Badges (e.g. Rock, Indie) */}
+          {/* Genre Badges */}
           <div className="flex items-center gap-1.5">
             {song.tags && song.tags.length > 0 ? (
               song.tags.map((tag) => (
@@ -324,7 +480,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             )}
           </div>
 
-          {/* Info Labels: Realtime Live Musicians, 👁 views, ♡ likes, ⏱ Waktu Latihan, Bagikan */}
+          {/* Info Labels: Realtime Live Musicians, views, likes, Practice Timer, Share */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
             {/* Live active musicians badge */}
             <div
@@ -377,6 +533,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             <button
               onClick={handleShare}
               className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+              title="Bagikan lagu ke media sosial atau salin tautan"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>{shareToast ? 'Tersalin!' : 'Bagikan'}</span>
@@ -389,10 +546,10 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Chord Box */}
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
-          {/* Top Toolbar inside chord card (Mockup: Chord — 0 + Capo 0 ⌄ A- A A+ Copy) */}
+          {/* Top Toolbar inside chord card */}
           <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
             {/* Left: Transpose & Capo */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="font-bold text-slate-900 dark:text-white">Chord</span>
 
               {/* Transpose: — 0 + */}
@@ -416,64 +573,93 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 </button>
               </div>
 
-              {/* Capo Dropdown */}
-              <div className="relative">
-                <select
-                  value={capoOffset}
-                  onChange={(e) => setCapoOffset(Number(e.target.value))}
-                  className="appearance-none pl-2.5 pr-6 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl font-medium text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-hidden"
+              {/* Transpose Reset Shortcut */}
+              {transposeStep !== 0 && (
+                <button
+                  onClick={() => setTransposeStep(0)}
+                  className="px-2 py-1 rounded-lg text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors cursor-pointer"
+                  title="Kembalikan ke nada asli"
                 >
-                  <option value={0}>Capo 0</option>
-                  <option value={1}>Capo 1</option>
-                  <option value={2}>Capo 2</option>
-                  <option value={3}>Capo 3</option>
-                  <option value={4}>Capo 4</option>
-                  <option value={5}>Capo 5</option>
-                </select>
-                <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  Reset (0)
+                </button>
+              )}
+
+              {/* Capo Dropdown */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative">
+                  <select
+                    value={capoOffset}
+                    onChange={(e) => setCapoOffset(Number(e.target.value))}
+                    className="appearance-none pl-2.5 pr-6 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl font-medium text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-hidden"
+                  >
+                    <option value={0}>Capo 0</option>
+                    <option value={1}>Capo 1</option>
+                    <option value={2}>Capo 2</option>
+                    <option value={3}>Capo 3</option>
+                    <option value={4}>Capo 4</option>
+                    <option value={5}>Capo 5</option>
+                    <option value={6}>Capo 6</option>
+                    <option value={7}>Capo 7</option>
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Sounding key info */}
+                {soundingKey && (
+                  <span
+                    className="hidden sm:inline-flex px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold border border-amber-200 dark:border-amber-900/50"
+                    title={`Dengan Capo ${capoOffset}, chord ${song.originalKey} akan terdengar di nada ${soundingKey}`}
+                  >
+                    Nada riil: {soundingKey}
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Right: Font Size + Copy Button */}
             <div className="flex items-center gap-2">
-              {/* Font Size A- A A+ (Mockup Komponen UI Penting) */}
+              {/* Font Size A- A A+ */}
               <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-0.5">
                 <button
-                  onClick={() => setFontSize(12)}
+                  onClick={() => handleFontSizeChange(12)}
                   className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
                     fontSize === 12
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
+                  title="Ukuran teks kecil"
                 >
                   A-
                 </button>
                 <button
-                  onClick={() => setFontSize(14)}
+                  onClick={() => handleFontSizeChange(14)}
                   className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
                     fontSize === 14
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
+                  title="Ukuran teks sedang"
                 >
                   A
                 </button>
                 <button
-                  onClick={() => setFontSize(17)}
+                  onClick={() => handleFontSizeChange(17)}
                   className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
                     fontSize === 17
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
+                  title="Ukuran teks besar"
                 >
                   A+
                 </button>
               </div>
 
-              {/* Copy Button (Mockup Blue Button with Copy icon) */}
+              {/* Copy Button */}
               <button
                 onClick={handleCopy}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                title="Salin chord & lirik ke papan klip"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Tersalin' : 'Copy'}</span>
@@ -487,14 +673,14 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             className="p-5 sm:p-7 select-text overflow-x-auto min-h-[360px]"
             style={{ fontSize: `${fontSize}px` }}
           >
-            {transposedContent.split('\n').map((line, idx) => renderFormattedLine(line, idx))}
+            {parsedContentLines}
 
             {/* Titik penanda akhir lirik untuk floating autoscroll */}
-            <div ref={lyricsEndRef} className="h-4" />
+            <div ref={lyricsEndRef} className="h-6" />
           </div>
         </div>
 
-        {/* Right Column: Lagu Terkait (Mockup Screen 3 & Screen 7) */}
+        {/* Right Column: Lagu Terkait */}
         <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -542,11 +728,18 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       </div>
 
       {/* ======================================================== */}
-      {/* FLOATING AUTO SCROLL CONTROLLER (TAMPILAN MELAYANG) */}
+      {/* FLOATING AUTO SCROLL CONTROLLER (TAMPILAN MELAYANG OPTIMAL) */}
       {/* ======================================================== */}
       {!isFloatingMinimized ? (
         <div className="fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-auto max-w-xl transition-all duration-300">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/90 shadow-2xl rounded-2xl sm:rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between sm:justify-center gap-2 sm:gap-3.5 ring-1 ring-black/5 dark:ring-white/10">
+          <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/90 shadow-2xl rounded-2xl sm:rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between sm:justify-center gap-2 sm:gap-3.5 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+            {/* Reading Progress Indicator Bar on Top Edge */}
+            <div
+              className="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-150"
+              style={{ width: `${scrollProgress}%` }}
+              title={`Progres membaca: ${scrollProgress}%`}
+            />
+
             {/* 1. Status Indicator & Mode */}
             <div className="flex items-center gap-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-slate-800">
               <span className="relative flex h-2.5 w-2.5">
@@ -564,10 +757,15 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 ></span>
               </span>
               <div className="hidden xs:block text-left">
-                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-none">
-                  Auto Scroll
-                </p>
-                <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                    Auto Scroll
+                  </p>
+                  <span className="text-[9px] font-mono font-semibold px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    {scrollProgress}%
+                  </span>
+                </div>
+                <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
                   {isFinished
                     ? 'Selesai di akhir lirik'
                     : autoScrollActive
@@ -591,7 +789,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               }`}
               title={
                 isFinished
-                  ? 'Klik untuk mengulangi scroll dari awal lirik'
+                  ? 'Klik untuk mengulangi scroll dari awal lirik (R)'
                   : 'Spasi: Jeda atau Mulai auto scroll'
               }
             >
@@ -619,17 +817,17 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 onClick={() => handleSpeedStep(-1)}
                 disabled={scrollSpeed <= 0.0}
                 className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
-                title="Kurangi kecepatan (0.0x min)"
+                title="Kurangi kecepatan [Arrow Down / -]"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
 
-              {/* Speed button with popover options */}
+              {/* Speed button with popover options + slider */}
               <div className="relative">
                 <button
                   onClick={() => setShowSpeedMenu(!showSpeedMenu)}
                   className="px-2 py-0.5 text-xs font-bold font-mono text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer flex items-center gap-0.5"
-                  title="Klik untuk memilih preset kecepatan (0.0x - 1.0x)"
+                  title="Klik untuk memilih slider atau preset kecepatan (0.0x - 1.0x)"
                 >
                   <span>{scrollSpeed.toFixed(1)}x</span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -641,27 +839,59 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                       className="fixed inset-0 z-50"
                       onClick={() => setShowSpeedMenu(false)}
                     />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-60 text-xs">
-                      <p className="font-bold text-slate-400 px-2 py-1 text-[10px] uppercase">
-                        Kecepatan (0.0x - 1.0x)
-                      </p>
-                      {speedOptions.map((s) => (
-                        <button
-                          key={s.value}
-                          onClick={() => {
-                            setScrollSpeed(s.value);
-                            setShowSpeedMenu(false);
-                          }}
-                          className={`w-full px-2.5 py-1.5 text-left rounded-lg font-medium cursor-pointer transition-colors flex items-center justify-between ${
-                            scrollSpeed === s.value
-                              ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          <span>{s.label}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{s.desc}</span>
-                        </button>
-                      ))}
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 z-60 text-xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          <Sliders className="w-3 h-3 text-blue-500" />
+                          Kecepatan Scroll
+                        </span>
+                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {scrollSpeed.toFixed(1)}x
+                        </span>
+                      </div>
+
+                      {/* Smooth Slider Bar */}
+                      <div className="space-y-1">
+                        <input
+                          type="range"
+                          min="0.0"
+                          max="1.0"
+                          step="0.05"
+                          value={scrollSpeed}
+                          onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none"
+                        />
+                        <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                          <span>0.0x (Diam)</span>
+                          <span>0.5x</span>
+                          <span>1.0x (Max)</span>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1">
+                        <p className="font-semibold text-slate-400 text-[10px] uppercase">
+                          Preset Cepat
+                        </p>
+                        <div className="max-h-44 overflow-y-auto space-y-0.5 pr-0.5">
+                          {speedOptions.map((s) => (
+                            <button
+                              key={s.value}
+                              onClick={() => {
+                                setScrollSpeed(s.value);
+                                setShowSpeedMenu(false);
+                              }}
+                              className={`w-full px-2 py-1 text-left rounded-lg font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                                Math.abs(scrollSpeed - s.value) < 0.05
+                                  ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
+                                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              <span>{s.label}</span>
+                              <span className="text-[10px] text-slate-400 font-normal">{s.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
@@ -671,7 +901,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 onClick={() => handleSpeedStep(1)}
                 disabled={scrollSpeed >= 1.0}
                 className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
-                title="Tambah kecepatan (1.0x max)"
+                title="Tambah kecepatan [Arrow Up / +]"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -681,7 +911,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             <button
               onClick={scrollToLyricsStart}
               className="p-2 rounded-xl sm:rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors shrink-0"
-              title="Lompat ke awal lirik"
+              title="Lompat ke awal lirik (R / Home)"
             >
               <ChevronsUp className="w-4 h-4" />
             </button>
@@ -719,6 +949,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             <span className="text-xs font-bold font-mono">
               {isFinished ? 'Selesai' : `${scrollSpeed.toFixed(1)}x`}
             </span>
+            <span className="text-[10px] text-slate-400 font-medium">({scrollProgress}%)</span>
             <Maximize2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
           </button>
         </div>

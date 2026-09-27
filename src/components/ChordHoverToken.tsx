@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { getChordData } from '../utils/chordDb';
 import { ChordDiagram } from './ChordDiagram';
 
@@ -7,7 +7,7 @@ interface ChordHoverTokenProps {
   onClickChord?: (chord: string) => void;
 }
 
-export const ChordHoverToken: React.FC<ChordHoverTokenProps> = ({
+const ChordHoverTokenComponent: React.FC<ChordHoverTokenProps> = ({
   chord,
   onClickChord,
 }) => {
@@ -44,3 +44,5 @@ export const ChordHoverToken: React.FC<ChordHoverTokenProps> = ({
     </span>
   );
 };
+
+export const ChordHoverToken = memo(ChordHoverTokenComponent);
