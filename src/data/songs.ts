@@ -630,4 +630,75 @@ Bersyukurlah pada yang kuasa
 Bm        C#m       D       E        A
 Cinta kita di dunia... selamanya`,
   },
+  {
+    id: 'roda-gila-kelompok-penerbang-roket',
+    title: 'Roda Gila',
+    artist: 'Kelompok Penerbang Roket',
+    originalKey: 'E',
+    capo: 0,
+    difficulty: 'Sedang',
+    genre: 'Rock',
+    tags: ['Rock', 'Indie'],
+    chords: ['E', 'D', 'C', 'B', 'A', 'G', 'F#', 'D#'],
+    content: `Intro : E..D
+E..C D
+(Ulangi 2X)
+
+E        C  D
+Kehidupan
+E       C  D
+Di dunia
+E                 C  D
+Banyak cara terlupa
+E                   C         D
+Kita manusia yang punya akal pikiran
+C       B   A
+Jangan gentar
+C            D
+Bernyali besar
+
+Reff :
+E             C   D     A
+Roda kencang melaju berani
+E          C    D     A
+Melesat gila kejar cahaya
+E            C     D    A
+Membakar panas tubuh berapi
+E           C         D     A
+Terus berputar tak henti-henti
+
+Interlude : A C D E / G F# D E / E..D / E..C D
+
+E      C  D
+Kehidupan
+E       C  D
+Di jalanan
+E                    C  D
+Dihadang dan terhalang
+E                  C         D
+Rintangan yang besar selalu diterjang
+C       B   A
+Jangan gentar
+C        D
+Bernyali besar
+
+Reff :
+E             C   D     A
+Roda kencang melaju berani
+E          C    D     A
+Melesat gila kejar cahaya
+E            C     D    A
+Membakar panas tubuh berapi
+E           C         D     A
+Terus berputar tak henti-henti
+
+E             C   D     A
+Roda kencang melaju berani
+E          C    D     A
+Melesat gila kejar cahaya
+E           C     D     A
+Membakar panas tubuh berapi
+E           C     D     A        D#
+Terus berputar tak henti-henti yeah oiz`,
+  },
 ];
