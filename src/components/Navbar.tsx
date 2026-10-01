@@ -6,8 +6,8 @@ import { getMusicianOverviewStats } from '../utils/realtimeStats';
 import { Search, Moon, Sun, SlidersHorizontal, Menu, X, Heart, Radio, BookOpen, Plus, Send, Timer, Activity } from 'lucide-react';
 
 interface NavbarProps {
-  currentTab: 'home' | 'catalog' | 'artists';
-  onTabChange: (tab: 'home' | 'catalog' | 'artists') => void;
+  currentTab: 'home' | 'catalog' | 'artists' | 'playlist';
+  onTabChange: (tab: 'home' | 'catalog' | 'artists' | 'playlist') => void;
   theme: ThemeType;
   onThemeChange: (theme: ThemeType) => void;
   onOpenQuickSearch: () => void;
@@ -90,6 +90,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             Artis
+          </button>
+          <button
+            onClick={() => onTabChange('playlist')}
+            className={`h-full flex items-center transition-colors cursor-pointer border-b-2 ${
+              currentTab === 'playlist'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                : 'border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Playlist Rock
           </button>
           <button
             onClick={onOpenRequest}

@@ -6,6 +6,7 @@ import { INITIAL_SONGS } from './data/songs';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
 import { SongList } from './components/SongList';
+import { PlaylistView } from './components/PlaylistView';
 import { ArtistsView } from './components/ArtistsView';
 import { SongViewer } from './components/SongViewer';
 import { Footer } from './components/Footer';
@@ -65,7 +66,7 @@ export default function App() {
   }, []);
 
   // Navigation tab
-  const [currentTab, setCurrentTab] = useState<'home' | 'catalog' | 'artists'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'catalog' | 'artists' | 'playlist'>('home');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false);
 
@@ -243,6 +244,15 @@ export default function App() {
                 onEditSong={handleEditCustomSong}
                 onDeleteSong={handleDeleteCustomSong}
                 filterFavoritesOnly={filterFavoritesOnly}
+              />
+            )}
+
+            {currentTab === 'playlist' && (
+              <PlaylistView
+                songs={songs}
+                favorites={favorites}
+                onSelectSong={(song) => setSelectedSong(song)}
+                onToggleFavorite={handleToggleFavorite}
               />
             )}
 
