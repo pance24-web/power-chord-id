@@ -701,4 +701,69 @@ Membakar panas tubuh berapi
 E           C     D     A        D#
 Terus berputar tak henti-henti yeah oiz`,
   },
+  {
+    id: 'mati-muda-kelompok-penerbang-roket',
+    title: 'Mati Muda',
+    artist: 'Kelompok Penerbang Roket',
+    originalKey: 'E',
+    capo: 0,
+    difficulty: 'Sedang',
+    genre: 'Rock',
+    tags: ['Rock', 'Indie'],
+    chords: ['E5', 'D5', 'G5', 'C5', 'A5'],
+    content: `Intro : E5  D5  E5 G5
+E5  D5  E5 G5
+
+Verse 1:
+E5
+Berseragam berlaga jagoan
+D5            E5  G5
+Mau jadi apa?
+E5
+Seperti tentara kau menyerang
+D5               E5  G5
+Dan akhirnya celaka!
+
+Chorus:
+C5  G5  D5 A5
+Mati... Muda...
+
+Verse 2:
+E5
+Impian harapan orang tua
+D5              E5  G5
+Musnah begitu saja!
+E5
+Nyawa-nyawa penerus bangsa
+D5              E5  G5
+Tidak ada harganya!
+
+Chorus:
+C5  G5  D5  A5
+Mati... Muda
+C5  G5  D5  A5
+Mati... Muda...
+
+Interlude:
+E5
+Parapapa papa papa!
+D5              G5
+Papara para papa papa papa!
+E5
+Papara para papa papa papa!
+D5              G5
+Papara para papa papa papa!
+E5
+Paparapa!
+
+Chorus:
+C5 G5   D5 A5
+Mati... Muda...
+C5 G5   D5 A5
+Mati... Muda...
+C5 G5   D5 A5
+Mati... Muda...
+C5 G5   D5 A5
+Mati... Muda...`,
+  },
 ];
