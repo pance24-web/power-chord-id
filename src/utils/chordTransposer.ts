@@ -16,7 +16,7 @@ const ENHARMONIC_MAP: Record<string, number> = {
   'B': 11, 'Cb': 11
 };
 
-// Regex to identify standard guitar chord tokens
+// Regex to identify standard guitar chords and power chords such as E5 or D#5
 export const CHORD_REGEX = /\b([A-G][b#]?)(m|maj|min|dim|aug|sus|add)?([0-9]{1,2})?((\/[A-G][b#]?)?)\b/g;
 
 export function transposeSingleChord(chord: string, semitones: number, preferFlats = false): string {
@@ -51,7 +51,7 @@ export function isChordToken(token: string): boolean {
   if (!token) return false;
   const clean = token.trim();
   // Quick test: starts with A-G, length <= 10
-  if (!/^[A-G][b#]?(m|maj|min|dim|aug|sus|add|7|9|11|13|6|2)*(\/[A-G][b#]?)?$/.test(clean)) {
+  if (!/^[A-G][b#]?(m|maj|min|dim|aug|sus|add|5|7|9|11|13|6|2)*(\/[A-G][b#]?)?$/.test(clean)) {
     return false;
   }
   return true;

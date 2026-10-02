@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Song } from '../types/chord';
-import { transposeText, transposeSingleChord } from '../utils/chordTransposer';
+import { isChordToken, transposeText, transposeSingleChord } from '../utils/chordTransposer';
 import { ChordHoverToken } from './ChordHoverToken';
 import { cacheViewedSong } from '../utils/offlineStorage';
 import { useSongRealtimeStats } from '../utils/realtimeStats';
@@ -399,9 +399,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       // Tokenized line check: chord line vs lyric line
       const words = line.split(/(\s+)/);
       const nonSpaces = words.filter((w) => w.trim().length > 0);
-      const chordCount = nonSpaces.filter((w) =>
-        /^[A-G][b#]?(m|maj|min|dim|aug|sus|add|7|9|11|13|6|2)*(\/[A-G][b#]?)?$/.test(w.trim())
-      ).length;
+      const chordCount = nonSpaces.filter((w) => isChordToken(w)).length;
       const isChordLine = nonSpaces.length > 0 && chordCount >= Math.ceil(nonSpaces.length * 0.7);
 
       if (isChordLine) {
@@ -411,7 +409,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             className="font-mono font-bold leading-relaxed whitespace-pre text-blue-600 dark:text-blue-400"
           >
             {words.map((w, wIdx) => {
-              if (/^[A-G][b#]?[a-zA-Z0-9#\+/\-]*$/.test(w.trim())) {
+              if (isChordToken(w)) {
                 return (
                   <ChordHoverToken
                     key={wIdx}
