@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Song } from '../types/chord';
-import { getSongTotalViews, formatCount } from '../utils/realtimeStats';
-import { Search, Heart, ChevronRight, FileQuestion, Eye } from 'lucide-react';
+import { getSongTotalViews, getSongTotalLikes, formatCount } from '../utils/realtimeStats';
+import { Search, X, Heart, ChevronRight, FileQuestion, Eye, LayoutGrid, List } from 'lucide-react';
+import { SongCard } from './SongCard';
 
 export type SortOption = 'recent' | 'popular' | 'title' | 'artist';
 
@@ -36,6 +37,8 @@ export const SongList: React.FC<SongListProps> = ({
   favorites,
   onSelectSong,
   onToggleFavorite,
+  onEditSong,
+  onDeleteSong,
   initialSearch = '',
   initialGenre = 'Semua',
   initialLetter = '',
@@ -46,13 +49,16 @@ export const SongList: React.FC<SongListProps> = ({
   const [selectedLetter, setSelectedLetter] = useState<string>(initialLetter);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(filterFavoritesOnly);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [statsVersion, setStatsVersion] = useState(0);
 
   useEffect(() => {
     const handleStatsChange = () => setStatsVersion((v) => v + 1);
     window.addEventListener('powerchord:stats_updated', handleStatsChange);
+    window.addEventListener('powerchord:favorites_updated', handleStatsChange);
     return () => {
       window.removeEventListener('powerchord:stats_updated', handleStatsChange);
+      window.removeEventListener('powerchord:favorites_updated', handleStatsChange);
     };
   }, []);
 
@@ -125,17 +131,28 @@ export const SongList: React.FC<SongListProps> = ({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari lagu atau artis..."
-          className="w-full pl-4 pr-14 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 shadow-2xs"
+          placeholder="Cari lagu atau nama artis..."
+          className="w-full pl-4 pr-20 sm:pr-24 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 shadow-2xs"
         />
-        <button
-          type="button"
-          onClick={() => {}}
-          className="absolute right-2 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer transition-colors shadow-2xs"
-          aria-label="Cari lagu"
-        >
-          <Search className="w-4 h-4" />
-        </button>
+        <div className="absolute right-2 flex items-center gap-1">
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              title="Hapus pencarian"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center justify-center"
+            aria-label="Cari lagu"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Filter Row: Genre dropdown, Urutkan dropdown, and Total count */}
@@ -186,10 +203,37 @@ export const SongList: React.FC<SongListProps> = ({
           </button>
         </div>
 
-        {/* Total Label (Mockup: Total: 2.458 lagu) */}
-        <span className="text-slate-400 dark:text-slate-500 font-medium">
-          Total: {filteredSongs.length > 0 ? `${filteredSongs.length + 2448} lagu` : '0 lagu'}
-        </span>
+        {/* Right side: View Mode Toggle & Total count */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              }`}
+              title="Tampilan Tabel"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              }`}
+              title="Tampilan Grid Kartu (SongCard)"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+
+          <span className="text-slate-400 dark:text-slate-500 font-medium">
+            Total: {filteredSongs.length > 0 ? `${filteredSongs.length + 2448} lagu` : '0 lagu'}
+          </span>
+        </div>
       </div>
 
       {/* Letter filter banner if active */}
@@ -205,89 +249,122 @@ export const SongList: React.FC<SongListProps> = ({
         </div>
       )}
 
-      {/* Catalog Table / List View (Mockup Screen 2 & Screen 5) */}
+      {/* Catalog Table / Grid View */}
       {filteredSongs.length > 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
-          {/* Table Header (Desktop) */}
-          <div className="hidden sm:grid grid-cols-12 px-5 py-3 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            <div className="col-span-1">#</div>
-            <div className="col-span-4">Judul Lagu</div>
-            <div className="col-span-3">Artis</div>
-            <div className="col-span-2">Genre</div>
-            <div className="col-span-1">Tayangan</div>
-            <div className="col-span-1 text-right">Aksi</div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredSongs.map((song) => (
+              <SongCard
+                key={song.id}
+                song={song}
+                isFavorite={favorites.includes(song.id)}
+                favoritesList={favorites}
+                onSelect={onSelectSong}
+                onToggleFavorite={onToggleFavorite}
+                onEdit={onEditSong}
+                onDelete={onDeleteSong}
+              />
+            ))}
           </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+            {/* Table Header (Desktop) */}
+            <div className="hidden sm:grid grid-cols-12 px-5 py-3 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="col-span-1">#</div>
+              <div className="col-span-4">Judul Lagu</div>
+              <div className="col-span-3">Artis</div>
+              <div className="col-span-1">Genre</div>
+              <div className="col-span-1">Tayangan</div>
+              <div className="col-span-1">Favorit</div>
+              <div className="col-span-1 text-right">Aksi</div>
+            </div>
 
-          {/* Table Rows */}
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {filteredSongs.map((song, index) => {
-              const isFav = favorites.includes(song.id);
-              const realtimeViews = getSongTotalViews(song.id, song.views);
-              return (
-                <div
-                  key={song.id}
-                  onClick={() => onSelectSong(song)}
-                  className="group px-4 sm:px-5 py-3 sm:py-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer flex sm:grid sm:grid-cols-12 items-center justify-between sm:justify-start gap-2"
-                >
-                  {/* # Number */}
-                  <div className="col-span-1 font-bold text-xs text-slate-400 w-6 sm:w-auto shrink-0">
-                    {index + 1}
-                  </div>
+            {/* Table Rows */}
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {filteredSongs.map((song, index) => {
+                const isFav = favorites.includes(song.id);
+                const realtimeViews = getSongTotalViews(song.id, song.views);
+                const realtimeLikes = getSongTotalLikes(song.id, song.likes, isFav);
+                return (
+                  <div
+                    key={song.id}
+                    onClick={() => onSelectSong(song)}
+                    className="group px-4 sm:px-5 py-3 sm:py-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer flex sm:grid sm:grid-cols-12 items-center justify-between sm:justify-start gap-2"
+                  >
+                    {/* # Number */}
+                    <div className="col-span-1 font-bold text-xs text-slate-400 w-6 sm:w-auto shrink-0">
+                      {index + 1}
+                    </div>
 
-                  {/* Judul Lagu */}
-                  <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                    {song.title}
-                    {/* Mobile artist & stats indicator */}
-                    <div className="flex sm:hidden items-center gap-2 text-xs font-normal text-slate-500 truncate mt-0.5">
-                      <span>{song.artist}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <Eye className="w-3 h-3 text-blue-500" />
-                        <span>{formatCount(realtimeViews)}</span>
+                    {/* Judul Lagu */}
+                    <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                      {song.title}
+                      {/* Mobile artist & stats indicator */}
+                      <div className="flex sm:hidden items-center gap-2 text-xs font-normal text-slate-500 truncate mt-0.5">
+                        <span>{song.artist}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                          <Eye className="w-3 h-3 text-blue-500" />
+                          <span>{formatCount(realtimeViews)}</span>
+                        </span>
+                        <span>•</span>
+                        <span className={`flex items-center gap-1 text-[11px] ${isFav ? 'text-rose-500 font-semibold' : 'text-slate-400'}`}>
+                          <Heart className={`w-3 h-3 ${isFav ? 'fill-current text-rose-500' : ''}`} />
+                          <span>{formatCount(realtimeLikes)}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Artis (Desktop) */}
+                    <div className="hidden sm:block col-span-3 text-xs text-slate-600 dark:text-slate-400 truncate">
+                      {song.artist}
+                    </div>
+
+                    {/* Genre */}
+                    <div className="col-span-1 shrink-0">
+                      {song.genre && (
+                        <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
+                          {song.genre}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tayangan Realtime (Desktop) */}
+                    <div className="hidden sm:flex col-span-1 items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      <Eye className="w-3.5 h-3.5 text-blue-500" />
+                      <span>{formatCount(realtimeViews)}</span>
+                    </div>
+
+                    {/* Favorit Realtime (Desktop) */}
+                    <div className="hidden sm:flex col-span-1 items-center gap-1 text-xs font-medium">
+                      <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current text-rose-500' : 'text-slate-400'}`} />
+                      <span className={isFav ? 'text-rose-500 font-bold' : 'text-slate-500 dark:text-slate-400'}>
+                        {formatCount(realtimeLikes)}
                       </span>
                     </div>
-                  </div>
 
-                  {/* Artis (Desktop) */}
-                  <div className="hidden sm:block col-span-3 text-xs text-slate-600 dark:text-slate-400 truncate">
-                    {song.artist}
+                    {/* Actions: Heart + Chevron */}
+                    <div className="col-span-1 flex items-center justify-end gap-1 shrink-0">
+                      <button
+                        onClick={(e) => onToggleFavorite(e, song.id)}
+                        className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                          isFav
+                            ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
+                            : 'text-slate-300 dark:text-slate-600 hover:text-rose-500'
+                        }`}
+                        aria-label="Simpan lagu"
+                        title={isFav ? 'Hapus dari favorit' : 'Simpan favorit'}
+                      >
+                        <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                    </div>
                   </div>
-
-                  {/* Genre */}
-                  <div className="col-span-2 shrink-0">
-                    {song.genre && (
-                      <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
-                        {song.genre}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Tayangan Realtime (Desktop) */}
-                  <div className="hidden sm:flex col-span-1 items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    <Eye className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{formatCount(realtimeViews)}</span>
-                  </div>
-
-                  {/* Actions: Heart + Chevron */}
-                  <div className="col-span-1 flex items-center justify-end gap-1 shrink-0">
-                    <button
-                      onClick={(e) => onToggleFavorite(e, song.id)}
-                      className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-                        isFav
-                          ? 'text-rose-500'
-                          : 'text-slate-300 dark:text-slate-600 hover:text-rose-500'
-                      }`}
-                      aria-label="Simpan lagu"
-                    >
-                      <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
-                    </button>
-                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )
       ) : (
         /* Empty State / Not Found (Mockup Screen 8: Responsif - Detail Lagu (Mobile) / State Kosong) */
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center max-w-md mx-auto space-y-4 shadow-2xs">

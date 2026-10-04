@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Song } from '../types/chord';
 import { isChordToken, transposeText, transposeSingleChord } from '../utils/chordTransposer';
 import { ChordHoverToken } from './ChordHoverToken';
+import { ChordDiagram } from './ChordDiagram';
+import { getChordData } from '../utils/chordDb';
+import { audioSynth } from '../utils/audioSynth';
 import { cacheViewedSong } from '../utils/offlineStorage';
 import { useSongRealtimeStats } from '../utils/realtimeStats';
 import {
@@ -14,6 +17,7 @@ import {
   Play,
   Pause,
   ChevronDown,
+  ChevronUp,
   Timer,
   ChevronsUp,
   Minus,
@@ -23,6 +27,13 @@ import {
   RotateCcw,
   Sliders,
   Sparkles,
+  Music,
+  Volume2,
+  BookOpen,
+  Maximize,
+  Grid,
+  Printer,
+  Activity,
 } from 'lucide-react';
 
 interface SongViewerProps {
@@ -33,6 +44,7 @@ interface SongViewerProps {
   onSelectSong?: (song: Song) => void;
   onToggleFavorite: (e: React.MouseEvent, songId: string) => void;
   onOpenChordModal: (chord: string) => void;
+  onOpenMetronome?: (bpm?: number) => void;
 }
 
 export const SongViewer: React.FC<SongViewerProps> = ({
@@ -43,6 +55,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   onSelectSong,
   onToggleFavorite,
   onOpenChordModal,
+  onOpenMetronome,
 }) => {
   // Transpose & Capo state
   const [transposeStep, setTransposeStep] = useState<number>(0);
@@ -73,6 +86,41 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
+
+  // Focus mode & Chord diagrams state
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+  const [showChordsStrip, setShowChordsStrip] = useState<boolean>(false);
+  const [isSideChordsOpen, setIsSideChordsOpen] = useState<boolean>(true);
+
+  // Extract distinct transposed chords used in the song
+  const currentSongChords = useMemo(() => {
+    const rawChords = song.chords && song.chords.length > 0 ? song.chords : ['C', 'G', 'Am', 'F'];
+    const distinct = Array.from(new Set(rawChords));
+    return distinct.map((c) => transposeSingleChord(c, transposeStep));
+  }, [song.chords, transposeStep]);
+
+  // Play strum sound for a specific chord
+  const handlePlayChord = useCallback((chordName: string) => {
+    const data = getChordData(chordName);
+    if (!data) return;
+    const stringNotes: ('E2' | 'A2' | 'D3' | 'G3' | 'B3' | 'E4')[] = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
+    data.frets.forEach((fret, stringIdx) => {
+      if (fret !== 'x') {
+        setTimeout(() => {
+          audioSynth.playGuitarString(stringNotes[stringIdx]);
+        }, stringIdx * 45);
+      }
+    });
+  }, []);
+
+  // Strum all chords in sequence
+  const handleStrumAllChords = useCallback(() => {
+    currentSongChords.forEach((chordName, chordIdx) => {
+      setTimeout(() => {
+        handlePlayChord(chordName);
+      }, chordIdx * 650);
+    });
+  }, [currentSongChords, handlePlayChord]);
 
   // RAF engine refs
   const animFrameRef = useRef<number | null>(null);
@@ -321,12 +369,16 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     }
   }, [song.title, song.artist, song.originalKey, capoOffset, transposeStep, transposedContent]);
 
-  // Share with Web Share API and clipboard fallback
+  // Share with Web Share API and deep-link clipboard fallback
   const handleShare = useCallback(async () => {
+    const deepLinkUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/?song=${encodeURIComponent(song.id)}`
+        : '';
     const shareData = {
       title: `${song.title} - ${song.artist} | PowerChord`,
       text: `Kunci gitar & lirik lagu ${song.title} oleh ${song.artist}`,
-      url: window.location.href,
+      url: deepLinkUrl,
     };
     if (navigator.share) {
       try {
@@ -337,11 +389,16 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       }
     }
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(deepLinkUrl);
       setShareToast(true);
       setTimeout(() => setShareToast(false), 2000);
     }
-  }, [song.title, song.artist]);
+  }, [song.id, song.title, song.artist]);
+
+  // Handle print
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
 
   // Related songs memoized
   const relatedSongs = useMemo(() => {
@@ -440,6 +497,26 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
   return (
     <div className="space-y-6 pb-28">
+      {/* Schema.org MusicComposition Structured Data for Rich Search Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'MusicComposition',
+            name: song.title,
+            composer: {
+              '@type': 'Person',
+              name: song.artist,
+            },
+            musicalKey: song.originalKey,
+            genre: song.genre || 'Pop',
+            inLanguage: 'id',
+            description: `Kunci gitar dan lirik lagu ${song.title} oleh ${song.artist}. Nada dasar ${song.originalKey}.`,
+          }),
+        }}
+      />
+
       {/* Back button */}
       <button
         onClick={onBack}
@@ -527,11 +604,36 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               </span>
             </button>
 
+            {/* Metronome Launcher */}
+            {onOpenMetronome && (
+              <button
+                onClick={() => onOpenMetronome(Number(song.tempo) || 80)}
+                className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                title={`Buka metronom digital (Tempo: ${song.tempo || 80} BPM)`}
+              >
+                <Activity className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden xs:inline">Metronom</span>
+                {song.tempo && (
+                  <span className="font-mono text-[10px] text-slate-400">({song.tempo})</span>
+                )}
+              </button>
+            )}
+
+            {/* Print / PDF */}
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+              title="Cetak lirik & chord atau simpan ke PDF"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Cetak</span>
+            </button>
+
             {/* Share */}
             <button
               onClick={handleShare}
               className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-              title="Bagikan lagu ke media sosial atau salin tautan"
+              title="Bagikan tautan langsung lagu ini"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>{shareToast ? 'Tersalin!' : 'Bagikan'}</span>
@@ -540,32 +642,38 @@ export const SongViewer: React.FC<SongViewerProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Left Column Chord Sheet, Right Column Related Songs */}
+      {/* Main Grid: Left Column Chord Sheet, Right Column Related Songs & Chord Diagrams */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Chord Box */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
-          {/* Top Toolbar inside chord card */}
-          <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div
+          className={`${
+            isFocusMode ? 'lg:col-span-12' : 'lg:col-span-8'
+          } bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden transition-all duration-200`}
+        >
+          {/* Top Toolbar inside chord card (Sticky for seamless transpose/font adjustment while scrolling) */}
+          <div className="sticky top-16 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs shadow-2xs">
             {/* Left: Transpose & Capo */}
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="font-bold text-slate-900 dark:text-white">Chord</span>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+              <span className="font-bold text-slate-900 dark:text-white hidden sm:inline">Chord</span>
 
               {/* Transpose: — 0 + */}
               <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-0.5">
                 <button
                   onClick={() => setTransposeStep((prev) => prev - 1)}
-                  className="px-2 py-1 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-bold cursor-pointer"
+                  className="px-2.5 py-1.5 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-bold cursor-pointer"
                   title="Turunkan 1/2 nada"
+                  aria-label="Turunkan 1/2 nada"
                 >
                   —
                 </button>
-                <span className="font-mono font-bold px-2 text-slate-800 dark:text-slate-100 min-w-6 text-center">
+                <span className="font-mono font-bold px-2 text-slate-800 dark:text-slate-100 min-w-6 text-center text-xs sm:text-sm">
                   {transposeStep > 0 ? `+${transposeStep}` : transposeStep}
                 </span>
                 <button
                   onClick={() => setTransposeStep((prev) => prev + 1)}
-                  className="px-2 py-1 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-bold cursor-pointer"
+                  className="px-2.5 py-1.5 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-bold cursor-pointer"
                   title="Naikkan 1/2 nada"
+                  aria-label="Naikkan 1/2 nada"
                 >
                   +
                 </button>
@@ -575,10 +683,10 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               {transposeStep !== 0 && (
                 <button
                   onClick={() => setTransposeStep(0)}
-                  className="px-2 py-1 rounded-lg text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors cursor-pointer"
+                  className="px-2 py-1.5 min-h-[34px] rounded-lg text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors cursor-pointer"
                   title="Kembalikan ke nada asli"
                 >
-                  Reset (0)
+                  Reset
                 </button>
               )}
 
@@ -588,7 +696,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                   <select
                     value={capoOffset}
                     onChange={(e) => setCapoOffset(Number(e.target.value))}
-                    className="appearance-none pl-2.5 pr-6 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl font-medium text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-hidden"
+                    className="appearance-none pl-2.5 pr-6 py-1.5 min-h-[34px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl font-medium text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-hidden text-xs"
                   >
                     <option value={0}>Capo 0</option>
                     <option value={1}>Capo 1</option>
@@ -605,49 +713,68 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 {/* Sounding key info */}
                 {soundingKey && (
                   <span
-                    className="hidden sm:inline-flex px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold border border-amber-200 dark:border-amber-900/50"
+                    className="hidden md:inline-flex px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold border border-amber-200 dark:border-amber-900/50"
                     title={`Dengan Capo ${capoOffset}, chord ${song.originalKey} akan terdengar di nada ${soundingKey}`}
                   >
-                    Nada riil: {soundingKey}
+                    Riil: {soundingKey}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Right: Font Size + Copy Button */}
-            <div className="flex items-center gap-2">
+            {/* Right: Quick Chord Bar Toggle, Font Size, Copy, and Focus Mode */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Quick Chords Strip toggle (especially handy on mobile) */}
+              <button
+                onClick={() => setShowChordsStrip(!showChordsStrip)}
+                className={`px-2.5 py-1.5 min-h-[34px] rounded-xl font-semibold flex items-center gap-1 transition-colors cursor-pointer text-xs ${
+                  showChordsStrip
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 hover:text-blue-600'
+                }`}
+                title="Buka daftar kunci yang digunakan dalam lagu ini"
+                aria-label="Lihat kunci lagu"
+              >
+                <Music className="w-3.5 h-3.5" />
+                <span>Kunci</span>
+                <span className="font-mono text-[11px] opacity-80">({currentSongChords.length})</span>
+              </button>
+
               {/* Font Size A- A A+ */}
               <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-0.5">
                 <button
                   onClick={() => handleFontSizeChange(12)}
-                  className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-1 min-h-[32px] rounded-lg font-bold transition-colors cursor-pointer text-xs ${
                     fontSize === 12
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                   title="Ukuran teks kecil"
+                  aria-label="Ukuran teks kecil"
                 >
                   A-
                 </button>
                 <button
                   onClick={() => handleFontSizeChange(14)}
-                  className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-1 min-h-[32px] rounded-lg font-bold transition-colors cursor-pointer text-xs ${
                     fontSize === 14
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                   title="Ukuran teks sedang"
+                  aria-label="Ukuran teks sedang"
                 >
                   A
                 </button>
                 <button
                   onClick={() => handleFontSizeChange(17)}
-                  className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-1 min-h-[32px] rounded-lg font-bold transition-colors cursor-pointer text-xs ${
                     fontSize === 17
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                   title="Ukuran teks besar"
+                  aria-label="Ukuran teks besar"
                 >
                   A+
                 </button>
@@ -656,19 +783,78 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               {/* Copy Button */}
               <button
                 onClick={handleCopy}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                className="px-2.5 sm:px-3 py-1.5 min-h-[34px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                 title="Salin chord & lirik ke papan klip"
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Tersalin' : 'Copy'}</span>
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                <span className="hidden xs:inline text-xs">{copied ? 'Tersalin' : 'Copy'}</span>
+              </button>
+
+              {/* Desktop Focus Mode Toggle */}
+              <button
+                onClick={() => setIsFocusMode(!isFocusMode)}
+                className={`hidden lg:flex items-center gap-1 px-2.5 py-1.5 min-h-[34px] rounded-xl font-semibold transition-colors cursor-pointer ${
+                  isFocusMode
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 hover:text-blue-600'
+                }`}
+                title={isFocusMode ? 'Kembali ke tampilan berdampingan' : 'Mode fokus layar lebar'}
+                aria-label="Mode fokus"
+              >
+                {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                <span className="text-xs">{isFocusMode ? 'Normal' : 'Fokus'}</span>
               </button>
             </div>
           </div>
 
+          {/* Quick Chords Strip (Horizontal scroll on mobile and tablet) */}
+          {showChordsStrip && (
+            <div className="bg-slate-50/90 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Music className="w-3.5 h-3.5 text-blue-600" />
+                  Kunci yang Digunakan:
+                </span>
+                <button
+                  onClick={handleStrumAllChords}
+                  className="flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Strum Semua Kunci
+                </button>
+              </div>
+
+              {/* Horizontal pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {currentSongChords.map((chord) => (
+                  <div
+                    key={chord}
+                    className="shrink-0 flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-2xs gap-1"
+                  >
+                    <button
+                      onClick={() => onOpenChordModal(chord)}
+                      className="px-2.5 py-1 font-mono font-bold text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                      title="Lihat diagram kunci"
+                    >
+                      {chord}
+                    </button>
+                    <button
+                      onClick={() => handlePlayChord(chord)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                      title="Dengarkan petikan akor"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Lyrics and Chords Content Area */}
           <div
             ref={lyricsContainerRef}
-            className="p-5 sm:p-7 select-text overflow-x-auto min-h-[360px]"
+            className="p-4 sm:p-7 select-text overflow-x-auto min-h-[360px]"
             style={{ fontSize: `${fontSize}px` }}
           >
             {parsedContentLines}
@@ -678,59 +864,118 @@ export const SongViewer: React.FC<SongViewerProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Lagu Terkait */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Lagu Terkait
-            </h2>
-            <button
-              onClick={onBack}
-              className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-            >
-              Lihat Semua &rarr;
-            </button>
-          </div>
-
-          {/* Numbered List of 5 Related Songs */}
-          <div className="space-y-1">
-            {relatedSongs.map((relSong, idx) => (
-              <div
-                key={relSong.id}
-                onClick={() => onSelectSong && onSelectSong(relSong)}
-                className="group p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="font-bold text-slate-400 text-xs w-4 shrink-0 text-center">
-                    {idx + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                      {relSong.title}
-                    </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                      {relSong.artist}
+        {/* Right Column: Chord Diagrams & Lagu Terkait (Desktop Sidebar) */}
+        {!isFocusMode && (
+          <div className="lg:col-span-4 space-y-5">
+            {/* 1. Chord Diagrams in Song (Guitarist Companion Box) */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                    <Grid className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Diagram Kunci
+                    </h2>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      {currentSongChords.length} kunci di lagu ini
                     </p>
                   </div>
                 </div>
 
-                {relSong.genre && (
-                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 shrink-0">
-                    {relSong.genre}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleStrumAllChords}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Petik arpeggio semua kunci"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsSideChordsOpen(!isSideChordsOpen)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={isSideChordsOpen ? 'Tutup diagram' : 'Buka diagram'}
+                  >
+                    {isSideChordsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-            ))}
+
+              {isSideChordsOpen && (
+                <div className="grid grid-cols-2 gap-2.5 pt-1 animate-in fade-in duration-150">
+                  {currentSongChords.map((chordName) => {
+                    const pos = getChordData(chordName);
+                    return (
+                      <div
+                        key={chordName}
+                        onClick={() => onOpenChordModal(chordName)}
+                        className="cursor-pointer transition-transform hover:scale-[1.02]"
+                        title="Klik untuk memperbesar diagram"
+                      >
+                        <ChordDiagram chord={pos} chordName={chordName} size="sm" showSoundButton={true} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Lagu Terkait */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Lagu Terkait
+                </h2>
+                <button
+                  onClick={onBack}
+                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  Lihat Semua &rarr;
+                </button>
+              </div>
+
+              {/* Numbered List of 5 Related Songs */}
+              <div className="space-y-1">
+                {relatedSongs.map((relSong, idx) => (
+                  <div
+                    key={relSong.id}
+                    onClick={() => onSelectSong && onSelectSong(relSong)}
+                    className="group p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-bold text-slate-400 text-xs w-4 shrink-0 text-center">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                          {relSong.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          {relSong.artist}
+                        </p>
+                      </div>
+                    </div>
+
+                    {relSong.genre && (
+                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 shrink-0">
+                        {relSong.genre}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ======================================================== */}
       {/* FLOATING AUTO SCROLL CONTROLLER (TAMPILAN MELAYANG OPTIMAL) */}
       {/* ======================================================== */}
       {!isFloatingMinimized ? (
-        <div className="fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-auto max-w-xl transition-all duration-300">
-          <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/90 shadow-2xl rounded-2xl sm:rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between sm:justify-center gap-2 sm:gap-3.5 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+        <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-xl transition-all duration-300 pb-[env(safe-area-inset-bottom,0px)]">
+          <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/90 shadow-2xl rounded-2xl sm:rounded-full px-2 sm:px-4 py-1.5 sm:py-2.5 flex items-center justify-between sm:justify-center gap-1 sm:gap-3 ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
             {/* Reading Progress Indicator Bar on Top Edge */}
             <div
               className="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-150"
@@ -739,7 +984,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             />
 
             {/* 1. Status Indicator & Mode */}
-            <div className="flex items-center gap-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-slate-800 shrink-0">
               <span className="relative flex h-2.5 w-2.5">
                 {autoScrollActive && (
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -778,7 +1023,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             {/* 2. Main Play / Pause / Restart Button */}
             <button
               onClick={() => handleToggleAutoScroll()}
-              className={`px-3.5 sm:px-5 py-2 rounded-xl sm:rounded-full text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0 ${
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 min-h-[42px] sm:min-h-[44px] rounded-xl sm:rounded-full text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0 ${
                 isFinished
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/30 shadow-emerald-500/20'
                   : autoScrollActive
@@ -790,6 +1035,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                   ? 'Klik untuk mengulangi scroll dari awal lirik (R)'
                   : 'Spasi: Jeda atau Mulai auto scroll'
               }
+              aria-label={autoScrollActive ? 'Jeda scroll' : 'Mulai auto scroll'}
             >
               {autoScrollActive ? (
                 <>
@@ -810,12 +1056,13 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             </button>
 
             {/* 3. Speed Stepper: [-] 0.5x [+] */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl sm:rounded-full p-0.5 border border-slate-200/60 dark:border-slate-700/60 shrink-0">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl sm:rounded-full p-0.5 border border-slate-200/60 dark:border-slate-700/60 shrink-0 min-h-[40px]">
               <button
                 onClick={() => handleSpeedStep(-1)}
                 disabled={scrollSpeed <= 0.0}
-                className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
+                className="p-2 sm:p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
                 title="Kurangi kecepatan [Arrow Down / -]"
+                aria-label="Kurangi kecepatan"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -824,8 +1071,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                  className="px-2 py-0.5 text-xs font-bold font-mono text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer flex items-center gap-0.5"
+                  className="px-2 py-1 text-xs font-bold font-mono text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer flex items-center gap-0.5 min-h-[36px]"
                   title="Klik untuk memilih slider atau preset kecepatan (0.0x - 1.0x)"
+                  aria-label="Pilih kecepatan"
                 >
                   <span>{scrollSpeed.toFixed(1)}x</span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -837,7 +1085,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                       className="fixed inset-0 z-50"
                       onClick={() => setShowSpeedMenu(false)}
                     />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 z-60 text-xs space-y-2.5">
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-56 max-w-[85vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 z-60 text-xs space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider flex items-center gap-1">
                           <Sliders className="w-3 h-3 text-blue-500" />
@@ -898,8 +1146,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               <button
                 onClick={() => handleSpeedStep(1)}
                 disabled={scrollSpeed >= 1.0}
-                className="p-1.5 rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
+                className="p-2 sm:p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg sm:rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer transition-colors"
                 title="Tambah kecepatan [Arrow Up / +]"
+                aria-label="Tambah kecepatan"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -908,8 +1157,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             {/* 4. Quick Scroll to Start of Lyrics */}
             <button
               onClick={scrollToLyricsStart}
-              className="p-2 rounded-xl sm:rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors shrink-0"
+              className="p-2 sm:p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl sm:rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors shrink-0"
               title="Lompat ke awal lirik (R / Home)"
+              aria-label="Lompat ke awal lirik"
             >
               <ChevronsUp className="w-4 h-4" />
             </button>
@@ -917,8 +1167,9 @@ export const SongViewer: React.FC<SongViewerProps> = ({
             {/* 5. Minimize to Pill Button */}
             <button
               onClick={() => setIsFloatingMinimized(true)}
-              className="p-2 rounded-xl sm:rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+              className="p-2 sm:p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl sm:rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
               title="Perkecil panel melayang"
+              aria-label="Perkecil panel"
             >
               <Minimize2 className="w-3.5 h-3.5" />
             </button>
@@ -926,11 +1177,12 @@ export const SongViewer: React.FC<SongViewerProps> = ({
         </div>
       ) : (
         /* Minimized floating button in bottom right */
-        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 pb-[env(safe-area-inset-bottom,0px)]">
           <button
             onClick={() => setIsFloatingMinimized(false)}
-            className="group flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 cursor-pointer transition-all active:scale-95 ring-1 ring-black/5"
+            className="group flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 cursor-pointer transition-all active:scale-95 ring-1 ring-black/5"
             title="Buka panel Auto Scroll melayang"
+            aria-label="Buka kontrol autoscroll"
           >
             <span className="relative flex h-2.5 w-2.5">
               {autoScrollActive ? (

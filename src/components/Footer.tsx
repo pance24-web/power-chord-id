@@ -7,6 +7,8 @@ interface FooterProps {
   onNavigateCatalog: () => void;
   onNavigateArtists: () => void;
   onOpenRequest: () => void;
+  onOpenTerms?: () => void;
+  onOpenPrivacy?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -14,6 +16,8 @@ export const Footer: React.FC<FooterProps> = ({
   onNavigateCatalog,
   onNavigateArtists,
   onOpenRequest,
+  onOpenTerms,
+  onOpenPrivacy,
 }) => {
   return (
     <footer className="bg-[#0B132B] text-slate-400 mt-16 no-print">
@@ -57,13 +61,19 @@ export const Footer: React.FC<FooterProps> = ({
               Request Chord
             </button>
             <span className="text-slate-600">·</span>
-            <span className="hover:text-white transition-colors cursor-pointer">
+            <button
+              onClick={onOpenPrivacy}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
               Privasi
-            </span>
+            </button>
             <span className="text-slate-600">·</span>
-            <span className="hover:text-white transition-colors cursor-pointer">
-              DMCA
-            </span>
+            <button
+              onClick={onOpenTerms}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Ketentuan & DMCA
+            </button>
             <span className="text-slate-600">·</span>
             <span className="hover:text-white transition-colors cursor-pointer">
               Tentang

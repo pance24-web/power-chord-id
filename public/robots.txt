@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 
-# Sitemap
-# Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://powerchord.app/sitemap.xml

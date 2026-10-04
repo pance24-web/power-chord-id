@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus } from 'lucide-react';
+import { X, Save, Plus, AlertCircle } from 'lucide-react';
 import { Song } from '../types/chord';
+import { validateSongInput } from '../utils/sanitizer';
 
 interface SongEditorModalProps {
   isOpen: boolean;
@@ -23,8 +24,10 @@ export const SongEditorModal: React.FC<SongEditorModalProps> = ({
   const [genre, setGenre] = useState('Pop');
   const [difficulty, setDifficulty] = useState<'Mudah' | 'Sedang' | 'Lanjutan'>('Mudah');
   const [content, setContent] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setFormErrors({});
     if (editingSong) {
       setTitle(editingSong.title);
       setArtist(editingSong.artist);
@@ -46,6 +49,15 @@ export const SongEditorModal: React.FC<SongEditorModalProps> = ({
     }
   }, [editingSong, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Extract chords from content
@@ -57,21 +69,40 @@ export const SongEditorModal: React.FC<SongEditorModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !artist.trim()) return;
+    setFormErrors({});
 
-    const chords = extractChords(content);
-
-    const song: Song = {
-      id: editingSong?.id || `custom-${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-      title: title.trim(),
-      artist: artist.trim(),
+    const validation = validateSongInput({
+      title,
+      artist,
       originalKey,
-      tempo: tempo ? parseInt(tempo, 10) : undefined,
+      tempo: tempo ? parseInt(tempo, 10) : 80,
       capo,
       genre,
       difficulty,
-      chords,
       content,
+    });
+
+    if (!validation.isValid || !validation.sanitized) {
+      setFormErrors(validation.errors);
+      return;
+    }
+
+    const clean = validation.sanitized;
+    const chords = extractChords(clean.content);
+
+    const song: Song = {
+      id:
+        editingSong?.id ||
+        `custom-${Date.now()}-${clean.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      title: clean.title,
+      artist: clean.artist,
+      originalKey: clean.originalKey,
+      tempo: clean.tempo,
+      capo: clean.capo,
+      genre: clean.genre,
+      difficulty: clean.difficulty,
+      chords,
+      content: clean.content,
       isCustom: true,
       createdAt: editingSong?.createdAt || new Date().toISOString(),
     };
@@ -81,8 +112,14 @@ export const SongEditorModal: React.FC<SongEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -106,6 +143,20 @@ export const SongEditorModal: React.FC<SongEditorModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
+          {Object.keys(formErrors).length > 0 && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 space-y-1 text-rose-700 dark:text-rose-300 text-xs">
+              <div className="flex items-center gap-1.5 font-bold">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>Mohon periksa data formulir:</span>
+              </div>
+              <ul className="list-disc list-inside pl-1 space-y-0.5 text-[11px]">
+                {Object.values(formErrors).map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

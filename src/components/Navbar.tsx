@@ -13,6 +13,7 @@ interface NavbarProps {
   onOpenQuickSearch: () => void;
   onOpenDictionary: () => void;
   onOpenTuner: () => void;
+  onOpenMetronome?: () => void;
   onOpenRequest: () => void;
   onOpenAddSong: () => void;
   favoritesCount: number;
@@ -27,6 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQuickSearch,
   onOpenDictionary,
   onOpenTuner,
+  onOpenMetronome,
   onOpenRequest,
   onOpenAddSong,
   favoritesCount,
@@ -181,17 +183,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onOpenTuner();
                       setFeaturesMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
                   >
                     <Radio className="w-3.5 h-3.5 text-blue-500" />
                     Tuner Gitar Virtual
                   </button>
+                  {onOpenMetronome && (
+                    <button
+                      onClick={() => {
+                        onOpenMetronome();
+                        setFeaturesMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-blue-500" />
+                      Metronom Digital
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       onOpenDictionary();
                       setFeaturesMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-blue-500" />
                     Kamus Kunci Chord
@@ -302,27 +316,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2">
             <button
               onClick={() => {
                 onOpenTuner();
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-700 dark:text-slate-200"
+              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
             >
-              <Radio className="w-4 h-4 text-blue-500" />
-              Tuner Gitar
+              <Radio className="w-4 h-4 text-blue-500 mb-1" />
+              Tuner
             </button>
             <button
               onClick={() => {
                 onOpenDictionary();
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-700 dark:text-slate-200"
+              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
             >
-              <BookOpen className="w-4 h-4 text-blue-500" />
-              Kamus Chord
+              <BookOpen className="w-4 h-4 text-blue-500 mb-1" />
+              Kamus
             </button>
+            {onOpenMetronome && (
+              <button
+                onClick={() => {
+                  onOpenMetronome();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <Activity className="w-4 h-4 text-blue-500 mb-1" />
+                Metronom
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -3,15 +3,141 @@ import { useState, useEffect, useRef } from 'react';
 const STATS_STORAGE_KEY = 'powerchord_realtime_stats_v1';
 const PRACTICE_STORAGE_KEY = 'powerchord_practice_time_v1';
 
+// Setup cross-tab realtime BroadcastChannel
+let statsBroadcastChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    statsBroadcastChannel = new BroadcastChannel('powerchord_realtime_channel');
+    statsBroadcastChannel.onmessage = (event) => {
+      if (event.data?.type === 'stats_updated') {
+        window.dispatchEvent(
+          new CustomEvent('powerchord:stats_updated', {
+            detail: event.data.detail,
+          })
+        );
+      } else if (event.data?.type === 'favorites_updated') {
+        window.dispatchEvent(
+          new CustomEvent('powerchord:favorites_updated', {
+            detail: event.data.detail,
+          })
+        );
+      }
+    };
+  } catch (err) {
+    console.warn('BroadcastChannel not initialized:', err);
+  }
+}
+
 export interface SongStatsData {
   localViews: number;
   localLikes: number;
+  serverViews?: number;
+  serverLikes?: number;
   practiceSeconds: number;
   lastViewedAt: number;
 }
 
 export interface AllStatsMap {
   [songId: string]: SongStatsData;
+}
+
+// Real-Time Server-Sent Events (SSE) Client Synchronization
+let sseConnection: EventSource | null = null;
+let reconnectTimer: NodeJS.Timeout | null = null;
+
+function applyServerSync(serverStats: { [id: string]: { views: number; likes: number } }) {
+  if (typeof window === 'undefined') return;
+  try {
+    const local = getAllStoredStats();
+    let hasChanges = false;
+
+    for (const [songId, stat] of Object.entries(serverStats)) {
+      if (!local[songId]) {
+        local[songId] = {
+          localViews: 0,
+          localLikes: 0,
+          practiceSeconds: 0,
+          lastViewedAt: Date.now(),
+        };
+      }
+      if (local[songId].serverViews !== stat.views || local[songId].serverLikes !== stat.likes) {
+        local[songId].serverViews = stat.views;
+        local[songId].serverLikes = stat.likes;
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(local));
+      window.dispatchEvent(new CustomEvent('powerchord:stats_updated', { detail: {} }));
+    }
+  } catch (err) {
+    console.error('Error applying server sync:', err);
+  }
+}
+
+function applyServerSongUpdate(songId: string, stat: { views: number; likes: number }) {
+  if (typeof window === 'undefined') return;
+  try {
+    const local = getAllStoredStats();
+    if (!local[songId]) {
+      local[songId] = {
+        localViews: 0,
+        localLikes: 0,
+        practiceSeconds: 0,
+        lastViewedAt: Date.now(),
+      };
+    }
+    local[songId].serverViews = stat.views;
+    local[songId].serverLikes = stat.likes;
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(local));
+
+    const payload = { songId, stats: local[songId] };
+    window.dispatchEvent(new CustomEvent('powerchord:stats_updated', { detail: payload }));
+  } catch (err) {
+    console.error('Error applying server song update:', err);
+  }
+}
+
+export function initServerSync() {
+  if (typeof window === 'undefined' || sseConnection) return;
+
+  try {
+    sseConnection = new EventSource('/api/stats/stream');
+
+    sseConnection.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'sync' && data.allStats) {
+          applyServerSync(data.allStats);
+        } else if ((data.type === 'view' || data.type === 'favorite') && data.songId && data.stat) {
+          applyServerSongUpdate(data.songId, data.stat);
+        }
+      } catch {
+        // ping or non-JSON message
+      }
+    };
+
+    sseConnection.onerror = () => {
+      if (sseConnection) {
+        sseConnection.close();
+        sseConnection = null;
+      }
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          initServerSync();
+        }, 5000);
+      }
+    };
+  } catch (err) {
+    console.warn('Could not establish SSE connection to /api/stats/stream:', err);
+  }
+}
+
+// Auto-start SSE sync in browser
+if (typeof window !== 'undefined') {
+  initServerSync();
 }
 
 /**
@@ -77,17 +203,87 @@ export function getAllStoredStats(): AllStatsMap {
 }
 
 /**
- * Get total numeric views for a song (base + local increments)
+ * Get total numeric views for a song (server canonical count or base + local increments)
  */
 export function getSongTotalViews(songId: string, baseViewsStr?: string): number {
-  const base = parseCount(baseViewsStr);
   const stats = getAllStoredStats();
+  if (stats[songId]?.serverViews !== undefined && stats[songId].serverViews! > 0) {
+    return stats[songId].serverViews!;
+  }
+  const base = parseCount(baseViewsStr);
   const local = stats[songId]?.localViews || 0;
   return base + local;
 }
 
 /**
- * Record a real-time view for a song
+ * Get total numeric likes/favorites for a song (server canonical count or base + local increments + favorite status)
+ */
+export function getSongTotalLikes(
+  songId: string,
+  baseLikesStr?: string,
+  isFavorite?: boolean
+): number {
+  const stats = getAllStoredStats();
+  if (stats[songId]?.serverLikes !== undefined && stats[songId].serverLikes! > 0) {
+    return stats[songId].serverLikes!;
+  }
+  const base = parseCount(baseLikesStr);
+  const localLikes = stats[songId]?.localLikes || 0;
+  return Math.max(0, base + localLikes + (isFavorite ? 1 : 0));
+}
+
+/**
+ * Notify all components, browser tabs, and the real server that favorite status changed
+ */
+export function notifyFavoritesUpdated(songId: string, isFav: boolean) {
+  if (typeof window === 'undefined') return;
+  const detail = { songId, isFavorite: isFav, timestamp: Date.now() };
+
+  // Optimistic local update
+  try {
+    const stats = getAllStoredStats();
+    if (!stats[songId]) {
+      stats[songId] = {
+        localViews: 0,
+        localLikes: 0,
+        practiceSeconds: 0,
+        lastViewedAt: Date.now(),
+      };
+    }
+    if (stats[songId].serverLikes !== undefined) {
+      stats[songId].serverLikes = isFav
+        ? stats[songId].serverLikes! + 1
+        : Math.max(0, stats[songId].serverLikes! - 1);
+    }
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
+  } catch {
+    // ignore
+  }
+
+  window.dispatchEvent(new CustomEvent('powerchord:favorites_updated', { detail }));
+  window.dispatchEvent(new CustomEvent('powerchord:stats_updated', { detail: { songId } }));
+
+  try {
+    statsBroadcastChannel?.postMessage({
+      type: 'favorites_updated',
+      detail,
+    });
+  } catch (e) {
+    // broadcast failed
+  }
+
+  // Real Multi-User Server Update
+  fetch('/api/stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'favorite', songId, isFavorite: isFav }),
+  }).catch((err) => {
+    console.warn('Failed to sync favorite to server:', err);
+  });
+}
+
+/**
+ * Record a real-time view for a song on the client and notify the real server
  */
 export function incrementSongView(songId: string): number {
   if (typeof window === 'undefined') return 1;
@@ -101,19 +297,41 @@ export function incrementSongView(songId: string): number {
     };
 
     current.localViews += 1;
+    if (current.serverViews !== undefined) {
+      current.serverViews += 1;
+    }
     current.lastViewedAt = Date.now();
     stats[songId] = current;
 
     localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
 
+    const payload = { songId, stats: current };
     // Dispatch custom event for cross-component realtime sync
     window.dispatchEvent(
       new CustomEvent('powerchord:stats_updated', {
-        detail: { songId, stats: current },
+        detail: payload,
       })
     );
 
-    return current.localViews;
+    try {
+      statsBroadcastChannel?.postMessage({
+        type: 'stats_updated',
+        detail: payload,
+      });
+    } catch {
+      // ignore
+    }
+
+    // Real Multi-User Server Update
+    fetch('/api/stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'view', songId }),
+    }).catch((err) => {
+      console.warn('Failed to sync view to server:', err);
+    });
+
+    return current.serverViews ?? current.localViews;
   } catch (e) {
     console.error('Error incrementing song view:', e);
     return 1;
@@ -153,6 +371,47 @@ export function getBaseLiveMusicians(baseViewsStr?: string): number {
   if (views >= 30_000) return 24;
   if (views >= 20_000) return 16;
   return 8;
+}
+
+/**
+ * Lightweight real-time hook for SongCard, list items, and thumbnails.
+ * Automatically synchronizes with views increments, favorite clicks, and cross-tab events.
+ */
+export function useSongLiveStats(
+  songId: string,
+  baseViewsStr?: string,
+  baseLikesStr?: string,
+  isFavorite?: boolean
+) {
+  const [, setVersion] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ songId?: string }>;
+      if (!customEvent.detail?.songId || customEvent.detail.songId === songId) {
+        setVersion((v) => v + 1);
+      }
+    };
+
+    window.addEventListener('powerchord:stats_updated', handleUpdate);
+    window.addEventListener('powerchord:favorites_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('powerchord:stats_updated', handleUpdate);
+      window.removeEventListener('powerchord:favorites_updated', handleUpdate);
+    };
+  }, [songId]);
+
+  const totalViews = getSongTotalViews(songId, baseViewsStr);
+  const totalLikes = getSongTotalLikes(songId, baseLikesStr, isFavorite);
+
+  return {
+    totalViews,
+    formattedViews: formatCount(totalViews),
+    preciseViews: formatCount(totalViews, true),
+    totalLikes,
+    formattedLikes: formatCount(totalLikes),
+  };
 }
 
 /**

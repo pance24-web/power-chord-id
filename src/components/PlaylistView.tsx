@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { ChevronRight, Clock3, Heart, ListMusic, Music2 } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { ChevronRight, Clock3, Heart, ListMusic, Music2, Eye } from 'lucide-react';
 import { Song } from '../types/chord';
-import { getSongTotalViews, formatCount } from '../utils/realtimeStats';
+import { getSongTotalViews, getSongTotalLikes, formatCount } from '../utils/realtimeStats';
 
 interface PlaylistViewProps {
   songs: Song[];
@@ -16,6 +16,18 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   onSelectSong,
   onToggleFavorite,
 }) => {
+  const [, setStatsVersion] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setStatsVersion((v) => v + 1);
+    window.addEventListener('powerchord:stats_updated', handleUpdate);
+    window.addEventListener('powerchord:favorites_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('powerchord:stats_updated', handleUpdate);
+      window.removeEventListener('powerchord:favorites_updated', handleUpdate);
+    };
+  }, []);
+
   const rockSongs = useMemo(
     () =>
       songs
@@ -88,14 +100,18 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs dark:border-slate-800 dark:bg-slate-900">
             <div className="hidden grid-cols-12 border-b border-slate-100 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 sm:grid">
               <span className="col-span-1">#</span>
-              <span className="col-span-5">Judul lagu</span>
+              <span className="col-span-4">Judul lagu</span>
               <span className="col-span-3">Artis</span>
-              <span className="col-span-2">Key</span>
+              <span className="col-span-1">Key</span>
+              <span className="col-span-1">Tayangan</span>
+              <span className="col-span-1">Favorit</span>
               <span className="col-span-1 text-right">Aksi</span>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {rockSongs.map((song, index) => {
                 const isFavorite = favorites.includes(song.id);
+                const realtimeViews = getSongTotalViews(song.id, song.views);
+                const realtimeLikes = getSongTotalLikes(song.id, song.likes, isFavorite);
                 return (
                   <div
                     key={song.id}
@@ -105,29 +121,38 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                     <span className="w-5 shrink-0 text-xs font-bold text-slate-400 sm:col-span-1 sm:w-auto">
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <div className="min-w-0 flex-1 sm:col-span-5">
+                    <div className="min-w-0 flex-1 sm:col-span-4">
                       <p className="truncate text-sm font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
                         {song.title}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400 sm:hidden">
-                        {song.artist} · {formatCount(getSongTotalViews(song.id, song.views))} tayangan
+                        {song.artist} · {formatCount(realtimeViews)} views · {formatCount(realtimeLikes)} fav
                       </p>
                     </div>
                     <span className="hidden truncate text-xs text-slate-600 dark:text-slate-400 sm:col-span-3 sm:block">
                       {song.artist}
                     </span>
-                    <span className="hidden text-xs font-bold text-blue-600 dark:text-blue-400 sm:col-span-2 sm:block">
+                    <span className="hidden text-xs font-bold text-blue-600 dark:text-blue-400 sm:col-span-1 sm:block">
                       {song.originalKey}
+                    </span>
+                    <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:col-span-1 sm:flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5 text-blue-500" />
+                      <span>{formatCount(realtimeViews)}</span>
+                    </span>
+                    <span className={`hidden text-xs sm:col-span-1 sm:flex items-center gap-1 ${isFavorite ? 'text-rose-500 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                      <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current text-rose-500' : ''}`} />
+                      <span>{formatCount(realtimeLikes)}</span>
                     </span>
                     <div className="flex shrink-0 items-center gap-1 sm:col-span-1 sm:justify-end">
                       <button
                         onClick={(event) => onToggleFavorite(event, song.id)}
-                        className={`rounded-full p-1.5 transition-colors ${
+                        className={`rounded-full p-1.5 transition-colors cursor-pointer ${
                           isFavorite
-                            ? 'text-rose-500'
+                            ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
                             : 'text-slate-300 hover:text-rose-500 dark:text-slate-600'
                         }`}
                         aria-label={isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit'}
+                        title={isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit'}
                       >
                         <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
                       </button>

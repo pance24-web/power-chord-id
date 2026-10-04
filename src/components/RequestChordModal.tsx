@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, Send, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { ChordRequest, STORAGE_KEYS } from '../types/chord';
+import { sanitizeText, validateEmail } from '../utils/sanitizer';
 
 interface RequestChordModalProps {
   isOpen: boolean;
@@ -17,20 +18,48 @@ export const RequestChordModal: React.FC<RequestChordModalProps> = ({
   const [artist, setArtist] = useState('');
   const [requesterEmail, setRequesterEmail] = useState('');
   const [notes, setNotes] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setErrorMessage(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!songTitle.trim() || !artist.trim()) return;
+    setErrorMessage(null);
+
+    const cleanTitle = sanitizeText(songTitle, 100);
+    const cleanArtist = sanitizeText(artist, 100);
+    const cleanNotes = sanitizeText(notes, 500);
+
+    if (cleanTitle.length < 2) {
+      setErrorMessage('Judul lagu wajib diisi minimal 2 karakter.');
+      return;
+    }
+    if (cleanArtist.length < 2) {
+      setErrorMessage('Nama artis wajib diisi minimal 2 karakter.');
+      return;
+    }
+    if (requesterEmail.trim() && !validateEmail(requesterEmail.trim())) {
+      setErrorMessage('Format email tidak valid. Mohon periksa kembali.');
+      return;
+    }
 
     const newRequest: ChordRequest = {
       id: `req-${Date.now()}`,
-      songTitle: songTitle.trim(),
-      artist: artist.trim(),
+      songTitle: cleanTitle,
+      artist: cleanArtist,
       requesterEmail: requesterEmail.trim() || undefined,
-      notes: notes.trim() || undefined,
+      notes: cleanNotes || undefined,
       requestedAt: new Date().toISOString(),
     };
 
@@ -52,13 +81,20 @@ export const RequestChordModal: React.FC<RequestChordModalProps> = ({
       setSongTitle('');
       setArtist('');
       setNotes('');
+      setErrorMessage(null);
       onClose();
     }, 1800);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 relative">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto"
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
@@ -80,6 +116,13 @@ export const RequestChordModal: React.FC<RequestChordModalProps> = ({
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Request Chord Lagu</h3>
               <p className="text-xs text-slate-500 mt-0.5">Lagu yang kamu cari belum ada? Ajukan judul lagu di bawah ini.</p>
             </div>
+
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

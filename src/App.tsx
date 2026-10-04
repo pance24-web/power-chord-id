@@ -18,10 +18,13 @@ import { GuitarTuner } from './components/GuitarTuner';
 import { QuickSearchModal } from './components/QuickSearchModal';
 import { RequestChordModal } from './components/RequestChordModal';
 import { SongEditorModal } from './components/SongEditorModal';
+import { MetronomeModal } from './components/MetronomeModal';
+import { LegalModal } from './components/LegalModals';
 import {
   cacheFavoriteSongs,
   getOfflineFavoriteSongs,
 } from './utils/offlineStorage';
+import { notifyFavoritesUpdated } from './utils/realtimeStats';
 
 export default function App() {
   // Theme state
@@ -81,10 +84,84 @@ export default function App() {
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
   const [isDictionaryOpen, setIsDictionaryOpen] = useState(false);
   const [isTunerOpen, setIsTunerOpen] = useState(false);
+  const [isMetronomeOpen, setIsMetronomeOpen] = useState(false);
+  const [metronomeBpm, setMetronomeBpm] = useState<number>(80);
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | null>(null);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [isSongEditorOpen, setIsSongEditorOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [activeChordModal, setActiveChordModal] = useState<string | null>(null);
+
+  // Deep-linking URL Sync (CORE-01: Shareable song links & indexing support)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const parseUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const songParam = params.get('song');
+      const tabParam = params.get('tab');
+
+      if (songParam) {
+        const found = songs.find((s) => s.id === songParam);
+        if (found) {
+          setSelectedSong(found);
+          return;
+        }
+      }
+
+      if (tabParam && ['home', 'catalog', 'artists', 'playlist'].includes(tabParam)) {
+        setSelectedSong(null);
+        setCurrentTab(tabParam as any);
+      }
+    };
+
+    parseUrl();
+
+    const handlePopState = () => {
+      parseUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [songs]);
+
+  const handleSelectSong = (song: Song | null) => {
+    setSelectedSong(song);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (song) {
+        url.searchParams.set('song', song.id);
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.delete('song');
+        if (currentTab !== 'home') {
+          url.searchParams.set('tab', currentTab);
+        } else {
+          url.searchParams.delete('tab');
+        }
+      }
+      const newQuery = url.searchParams.toString() ? `?${url.searchParams.toString()}` : '';
+      window.history.pushState(null, '', `${url.pathname}${newQuery}`);
+    }
+  };
+
+  const handleTabChange = (tab: 'home' | 'catalog' | 'artists' | 'playlist') => {
+    setSelectedSong(null);
+    setCurrentTab(tab);
+    setFilterFavoritesOnly(false);
+    setCatalogFilters({});
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('song');
+      if (tab === 'home') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      const newQuery = url.searchParams.toString() ? `?${url.searchParams.toString()}` : '';
+      window.history.pushState(null, '', `${url.pathname}${newQuery}`);
+    }
+  };
 
   // Apply theme to html root element
   useEffect(() => {
@@ -108,6 +185,8 @@ export default function App() {
     e.stopPropagation();
     setFavorites((prev) => {
       const exists = prev.includes(songId);
+      const isNowFav = !exists;
+      notifyFavoritesUpdated(songId, isNowFav);
       if (exists) {
         return prev.filter((id) => id !== songId);
       }
@@ -123,7 +202,7 @@ export default function App() {
       localStorage.setItem(STORAGE_KEYS.CUSTOM_SONGS, JSON.stringify(customOnly));
       return updated;
     });
-    setSelectedSong(newSong);
+    handleSelectSong(newSong);
   };
 
   const handleDeleteCustomSong = (e: React.MouseEvent, songId: string) => {
@@ -136,7 +215,7 @@ export default function App() {
         return updated;
       });
       if (selectedSong?.id === songId) {
-        setSelectedSong(null);
+        handleSelectSong(null);
       }
     }
   };
@@ -152,36 +231,69 @@ export default function App() {
     genre?: string;
     letter?: string;
   }) => {
-    setSelectedSong(null);
+    handleSelectSong(null);
     setFilterFavoritesOnly(false);
     if (options) {
       setCatalogFilters(options);
     } else {
       setCatalogFilters({});
     }
-    setCurrentTab('catalog');
+    handleTabChange('catalog');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Keyboard shortcuts (Desktop productivity: / or Ctrl+K for search, T for Tuner, M for Metronome, D for Dictionary)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsQuickSearchOpen(true);
+      } else if (e.key === '/') {
+        e.preventDefault();
+        setIsQuickSearchOpen(true);
+      } else if (e.key === 't' || e.key === 'T') {
+        if (!selectedSong) {
+          e.preventDefault();
+          setIsTunerOpen(true);
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        if (selectedSong?.tempo) {
+          setMetronomeBpm(Number(selectedSong.tempo) || 80);
+        }
+        setIsMetronomeOpen((prev) => !prev);
+      } else if (e.key === 'd' || e.key === 'D') {
+        if (!selectedSong) {
+          e.preventDefault();
+          setIsDictionaryOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSong]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 transition-colors pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 transition-colors pb-20 sm:pb-24 md:pb-0">
       {/* Offline Status Top Bar */}
       <OfflineIndicator />
 
       {/* Main Navbar */}
       <Navbar
         currentTab={currentTab}
-        onTabChange={(tab) => {
-          setSelectedSong(null);
-          setCurrentTab(tab);
-          setFilterFavoritesOnly(false);
-          setCatalogFilters({});
-        }}
+        onTabChange={handleTabChange}
         theme={theme}
         onThemeChange={setTheme}
         onOpenQuickSearch={() => setIsQuickSearchOpen(true)}
         onOpenDictionary={() => setIsDictionaryOpen(true)}
         onOpenTuner={() => setIsTunerOpen(true)}
+        onOpenMetronome={() => setIsMetronomeOpen(true)}
         onOpenRequest={() => setIsRequestOpen(true)}
         onOpenAddSong={() => {
           setEditingSong(null);
@@ -189,8 +301,8 @@ export default function App() {
         }}
         favoritesCount={favorites.length}
         onShowFavorites={() => {
-          setSelectedSong(null);
-          setCurrentTab('catalog');
+          handleSelectSong(null);
+          handleTabChange('catalog');
           setFilterFavoritesOnly(true);
         }}
       />
@@ -202,10 +314,14 @@ export default function App() {
             song={selectedSong}
             allSongs={songs}
             isFavorite={favorites.includes(selectedSong.id)}
-            onBack={() => setSelectedSong(null)}
-            onSelectSong={(song) => setSelectedSong(song)}
+            onBack={() => handleSelectSong(null)}
+            onSelectSong={handleSelectSong}
             onToggleFavorite={handleToggleFavorite}
             onOpenChordModal={(chord) => setActiveChordModal(chord)}
+            onOpenMetronome={(bpm) => {
+              setMetronomeBpm(bpm || 80);
+              setIsMetronomeOpen(true);
+            }}
           />
         ) : (
           <>
@@ -213,14 +329,10 @@ export default function App() {
               <HomePage
                 songs={songs}
                 favorites={favorites}
-                onSelectSong={(song) => setSelectedSong(song)}
+                onSelectSong={handleSelectSong}
                 onToggleFavorite={handleToggleFavorite}
                 onNavigateCatalog={handleNavigateCatalogWithFilter}
-                onNavigateArtists={() => {
-                  setSelectedSong(null);
-                  setCurrentTab('artists');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onNavigateArtists={() => handleTabChange('artists')}
                 onOpenDictionary={() => setIsDictionaryOpen(true)}
                 onOpenTuner={() => setIsTunerOpen(true)}
                 onOpenRequest={() => setIsRequestOpen(true)}
@@ -239,7 +351,7 @@ export default function App() {
                 initialSearch={catalogFilters.search || ''}
                 initialGenre={catalogFilters.genre || 'Semua'}
                 initialLetter={catalogFilters.letter || ''}
-                onSelectSong={(song) => setSelectedSong(song)}
+                onSelectSong={handleSelectSong}
                 onToggleFavorite={handleToggleFavorite}
                 onEditSong={handleEditCustomSong}
                 onDeleteSong={handleDeleteCustomSong}
@@ -251,7 +363,7 @@ export default function App() {
               <PlaylistView
                 songs={songs}
                 favorites={favorites}
-                onSelectSong={(song) => setSelectedSong(song)}
+                onSelectSong={handleSelectSong}
                 onToggleFavorite={handleToggleFavorite}
               />
             )}
@@ -259,7 +371,7 @@ export default function App() {
             {currentTab === 'artists' && (
               <ArtistsView
                 songs={songs}
-                onSelectSong={(song) => setSelectedSong(song)}
+                onSelectSong={handleSelectSong}
               />
             )}
           </>
@@ -268,34 +380,18 @@ export default function App() {
 
       {/* Footer */}
       <Footer
-        onNavigateHome={() => {
-          setSelectedSong(null);
-          setCurrentTab('home');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onNavigateCatalog={() => {
-          setSelectedSong(null);
-          setCurrentTab('catalog');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onNavigateArtists={() => {
-          setSelectedSong(null);
-          setCurrentTab('artists');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onNavigateHome={() => handleTabChange('home')}
+        onNavigateCatalog={() => handleTabChange('catalog')}
+        onNavigateArtists={() => handleTabChange('artists')}
         onOpenRequest={() => setIsRequestOpen(true)}
+        onOpenTerms={() => setLegalModalType('terms')}
+        onOpenPrivacy={() => setLegalModalType('privacy')}
       />
 
       {/* Mobile Bottom Navigation (Screens 4, 5, 6, 7, 8 in Mockup) */}
       <MobileBottomNav
         currentTab={currentTab}
-        onTabChange={(tab) => {
-          setSelectedSong(null);
-          setCurrentTab(tab);
-          setFilterFavoritesOnly(false);
-          setCatalogFilters({});
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onTabChange={handleTabChange}
         onOpenRequest={() => setIsRequestOpen(true)}
         hasSelectedSong={!!selectedSong}
       />
@@ -305,7 +401,7 @@ export default function App() {
         isOpen={isQuickSearchOpen}
         onClose={() => setIsQuickSearchOpen(false)}
         songs={songs}
-        onSelectSong={(song) => setSelectedSong(song)}
+        onSelectSong={handleSelectSong}
       />
 
       <ChordDictionaryModal
@@ -316,6 +412,12 @@ export default function App() {
       <GuitarTuner
         isOpen={isTunerOpen}
         onClose={() => setIsTunerOpen(false)}
+      />
+
+      <MetronomeModal
+        isOpen={isMetronomeOpen}
+        onClose={() => setIsMetronomeOpen(false)}
+        initialBpm={metronomeBpm}
       />
 
       <RequestChordModal
@@ -336,6 +438,12 @@ export default function App() {
       <ChordModal
         chordName={activeChordModal}
         onClose={() => setActiveChordModal(null)}
+      />
+
+      <LegalModal
+        isOpen={!!legalModalType}
+        onClose={() => setLegalModalType(null)}
+        type={legalModalType || 'terms'}
       />
     </div>
   );
