@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://power-chord-id-k5jh-chord-player.vercel.app'),
   title: 'PowerChord - Cari Chord Lagu Favoritmu',
   description: 'Temukan chord lagu dari berbagai genre dan artis favoritmu. Dilengkapi transpose kunci, capo, autoscroll, diagram kunci gitar, dan mode gelap.',
   openGraph: {
