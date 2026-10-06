@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { Song } from '../types/chord';
 import { getSongTotalViews, getSongTotalLikes, formatCount } from '../utils/realtimeStats';
 import { Search, X, Heart, ChevronRight, FileQuestion, Eye, LayoutGrid, List } from 'lucide-react';
@@ -51,6 +51,23 @@ export const SongList: React.FC<SongListProps> = ({
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(filterFavoritesOnly);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [statsVersion, setStatsVersion] = useState(0);
+  const deferredSearch = useDeferredValue(search);
+  const searchIndex = useMemo(
+    () =>
+      new Map(
+        songs.map((song) => [
+          song.id,
+          {
+            title: song.title.toLocaleLowerCase('id-ID'),
+            artist: song.artist.toLocaleLowerCase('id-ID'),
+            genre: song.genre?.toLocaleLowerCase('id-ID') || '',
+            tags: song.tags?.map((tag) => tag.toLocaleLowerCase('id-ID')).join(' ') || '',
+            chords: song.chords.join(' ').toLocaleLowerCase('id-ID'),
+          },
+        ]),
+      ),
+    [songs],
+  );
 
   useEffect(() => {
     const handleStatsChange = () => setStatsVersion((v) => v + 1);
@@ -63,15 +80,19 @@ export const SongList: React.FC<SongListProps> = ({
   }, []);
 
   const filteredSongs = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = deferredSearch.toLocaleLowerCase('id-ID').trim();
 
     return songs
       .filter((song) => {
+        const indexed = searchIndex.get(song.id);
         const matchSearch =
           !q ||
-          song.title.toLowerCase().includes(q) ||
-          song.artist.toLowerCase().includes(q) ||
-          song.chords.some((c) => c.toLowerCase().includes(q));
+          Boolean(
+            indexed &&
+              [indexed.title, indexed.artist, indexed.genre, indexed.tags, indexed.chords].some((field) =>
+                field.includes(q),
+              ),
+          );
 
         const matchGenre =
           selectedGenre === 'Semua' ||
@@ -104,7 +125,7 @@ export const SongList: React.FC<SongListProps> = ({
         if (timeA !== timeB) return timeB - timeA;
         return 0;
       });
-  }, [songs, search, selectedGenre, selectedLetter, showFavoritesOnly, favorites, sortBy, statsVersion]);
+  }, [songs, deferredSearch, searchIndex, selectedGenre, selectedLetter, showFavoritesOnly, favorites, sortBy, statsVersion]);
 
   const handleResetFilters = () => {
     setSearch('');

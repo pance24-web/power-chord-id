@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Search, X, Music, ChevronRight } from 'lucide-react';
 import { Song } from '../types/chord';
 
@@ -17,6 +17,20 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const deferredQuery = useDeferredValue(query);
+
+  const searchIndex = useMemo(
+    () =>
+      songs.map((song) => ({
+        song,
+        title: song.title.toLocaleLowerCase('id-ID'),
+        artist: song.artist.toLocaleLowerCase('id-ID'),
+        genre: song.genre?.toLocaleLowerCase('id-ID') || '',
+        tags: song.tags?.map((tag) => tag.toLocaleLowerCase('id-ID')).join(' ') || '',
+        chords: song.chords.join(' ').toLocaleLowerCase('id-ID'),
+      })),
+    [songs],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -34,17 +48,16 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  const results = songs.filter((s) => {
-    const q = query.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      s.title.toLowerCase().includes(q) ||
-      s.artist.toLowerCase().includes(q) ||
-      s.genre?.toLowerCase().includes(q) ||
-      s.tags?.some((tag) => tag.toLowerCase().includes(q)) ||
-      s.chords.some((chord) => chord.toLowerCase().includes(q))
-    );
-  });
+  const results = useMemo(() => {
+    const q = deferredQuery.toLocaleLowerCase('id-ID').trim();
+    if (!q) return searchIndex.map(({ song }) => song);
+
+    return searchIndex
+      .filter(({ title, artist, genre, tags, chords }) =>
+        [title, artist, genre, tags, chords].some((field) => field.includes(q)),
+      )
+      .map(({ song }) => song);
+  }, [deferredQuery, searchIndex]);
 
   return (
     <div
