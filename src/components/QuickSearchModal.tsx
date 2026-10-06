@@ -35,8 +35,15 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   if (!isOpen) return null;
 
   const results = songs.filter((s) => {
-    const q = query.toLowerCase();
-    return s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q);
+    const q = query.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      s.title.toLowerCase().includes(q) ||
+      s.artist.toLowerCase().includes(q) ||
+      s.genre?.toLowerCase().includes(q) ||
+      s.tags?.some((tag) => tag.toLowerCase().includes(q)) ||
+      s.chords.some((chord) => chord.toLowerCase().includes(q))
+    );
   });
 
   return (
@@ -73,6 +80,10 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         </div>
 
         {/* Results List */}
+        <div className="flex items-center justify-between px-4 pt-3 text-[11px] font-semibold text-slate-400">
+          <span>{query.trim() ? `${results.length} hasil ditemukan` : 'Cari berdasarkan judul, artis, genre, atau chord'}</span>
+          <span className="hidden sm:inline">Esc tutup</span>
+        </div>
         <div className="max-h-80 overflow-y-auto p-2">
           {results.length > 0 ? (
             results.map((song) => (

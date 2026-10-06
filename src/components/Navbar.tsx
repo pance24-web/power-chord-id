@@ -113,14 +113,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Zone: Search, Dark Mode, and app features */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Search Trigger */}
+          {/* Global Search Bar */}
           <button
             onClick={onOpenQuickSearch}
-            className="p-2.5 rounded-full text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="Cari chord lagu"
-            title="Cari lagu cepat"
+            className="group flex h-10 w-10 sm:w-52 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-slate-400 transition-colors hover:border-blue-300 hover:bg-white hover:text-blue-600 dark:border-slate-800 dark:bg-slate-800/70 dark:hover:border-blue-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
+            aria-label="Cari lagu atau artis"
+            title="Cari lagu cepat (Ctrl/Cmd+K)"
           >
-            <Search className="w-4 h-4" />
+            <Search className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
+            <span className="hidden truncate text-xs font-medium sm:inline">Cari lagu atau artis...</span>
+            <kbd className="ml-auto hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-900 sm:inline">
+              ⌘K
+            </kbd>
           </button>
 
           {/* Dark / Light Toggle */}
