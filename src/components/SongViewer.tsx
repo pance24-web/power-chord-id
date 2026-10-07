@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Song } from '../types/chord';
+import { Song, STORAGE_KEYS } from '../types/chord';
 import { isChordToken, transposeText, transposeSingleChord } from '../utils/chordTransposer';
 import { ChordHoverToken } from './ChordHoverToken';
 import { ChordDiagram } from './ChordDiagram';
@@ -79,13 +79,21 @@ export const SongViewer: React.FC<SongViewerProps> = ({
 
   // AutoScroll state & refs
   const [autoScrollActive, setAutoScrollActive] = useState<boolean>(false);
-  const [scrollSpeed, setScrollSpeed] = useState<number>(0.5);
+  const [scrollSpeed, setScrollSpeed] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0.5;
+    const saved = Number(localStorage.getItem(STORAGE_KEYS.SCROLL_SPEED));
+    return Number.isFinite(saved) ? Math.max(0, Math.min(1, saved)) : 0.5;
+  });
   const [copied, setCopied] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SCROLL_SPEED, String(scrollSpeed));
+  }, [scrollSpeed]);
 
   // Focus mode & Chord diagrams state
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
@@ -344,6 +352,21 @@ export const SongViewer: React.FC<SongViewerProps> = ({
       }
     };
   }, [autoScrollActive, scrollSpeed, updateProgress]);
+
+  // Manual scrolling should always take control away from Auto-Scroll.
+  useEffect(() => {
+    if (!autoScrollActive || !lyricsContainerRef.current) return;
+
+    const pauseForManualScroll = () => setAutoScrollActive(false);
+    const lyricsElement = lyricsContainerRef.current;
+    lyricsElement.addEventListener('wheel', pauseForManualScroll, { passive: true });
+    lyricsElement.addEventListener('touchstart', pauseForManualScroll, { passive: true });
+
+    return () => {
+      lyricsElement.removeEventListener('wheel', pauseForManualScroll);
+      lyricsElement.removeEventListener('touchstart', pauseForManualScroll);
+    };
+  }, [autoScrollActive]);
 
   // Transposed song content memoized to prevent re-transposing on every stopwatch tick
   const transposedContent = useMemo(() => {
