@@ -379,6 +379,12 @@ export const SongViewer: React.FC<SongViewerProps> = ({
     return transposeSingleChord(song.originalKey, capoOffset);
   }, [song.originalKey, capoOffset]);
 
+  // The displayed key follows transpose immediately, without reloading the song.
+  const transposedKey = useMemo(() => {
+    if (!song.originalKey) return null;
+    return transposeSingleChord(song.originalKey, transposeStep);
+  }, [song.originalKey, transposeStep]);
+
   // Copy with rich info
   const handleCopy = useCallback(() => {
     if (navigator.clipboard) {
@@ -680,7 +686,10 @@ export const SongViewer: React.FC<SongViewerProps> = ({
               <span className="font-bold text-slate-900 dark:text-white hidden sm:inline">Chord</span>
 
               {/* Transpose: — 0 + */}
-              <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-0.5">
+              <div
+                className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-0.5"
+                aria-label="Kontrol transpose kunci gitar"
+              >
                 <button
                   onClick={() => setTransposeStep((prev) => prev - 1)}
                   className="px-2.5 py-1.5 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-bold cursor-pointer"
@@ -689,7 +698,11 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 >
                   —
                 </button>
-                <span className="font-mono font-bold px-2 text-slate-800 dark:text-slate-100 min-w-6 text-center text-xs sm:text-sm">
+                <span
+                  className="font-mono font-bold px-2 text-slate-800 dark:text-slate-100 min-w-6 text-center text-xs sm:text-sm"
+                  aria-live="polite"
+                  aria-label={`Transpose ${transposeStep} semitone`}
+                >
                   {transposeStep > 0 ? `+${transposeStep}` : transposeStep}
                 </span>
                 <button
@@ -711,6 +724,16 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 >
                   Reset
                 </button>
+              )}
+
+              {transposedKey && (
+                <span
+                  className="inline-flex items-center min-h-[34px] px-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[11px] font-bold text-amber-700 dark:text-amber-300"
+                  aria-live="polite"
+                  title={`Nada dasar asli ${song.originalKey}, sekarang ditampilkan sebagai ${transposedKey}`}
+                >
+                  Nada: {transposedKey}
+                </span>
               )}
 
               {/* Capo Dropdown */}
