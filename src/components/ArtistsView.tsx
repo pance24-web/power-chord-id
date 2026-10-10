@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import Link from 'next/link';
 import { Song } from '../types/chord';
 import { Users, ChevronRight, Music2 } from 'lucide-react';
 
@@ -52,8 +53,9 @@ export const ArtistsView: React.FC<ArtistsViewProps> = ({ songs, onSelectSong })
 
             <div className="space-y-1">
               {artistSongs.map((song) => (
-                <button
+                <Link
                   key={song.id}
+                  href={`/chord/${song.id}`}
                   onClick={() => onSelectSong(song)}
                   className="w-full flex items-center justify-between p-2 rounded-xl text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer group"
                 >
@@ -62,7 +64,7 @@ export const ArtistsView: React.FC<ArtistsViewProps> = ({ songs, onSelectSong })
                     {song.title}
                   </span>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0" />
-                </button>
+                </Link>
               ))}
             </div>
           </div>

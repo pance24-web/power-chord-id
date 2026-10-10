@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ChevronRight, Clock3, Heart, ListMusic, Music2, Eye } from 'lucide-react';
 import { Song } from '../types/chord';
 import { getSongTotalViews, getSongTotalLikes, formatCount } from '../utils/realtimeStats';
@@ -123,7 +124,9 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                     </span>
                     <div className="min-w-0 flex-1 sm:col-span-4">
                       <p className="truncate text-sm font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                        {song.title}
+                        <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                          {song.title}
+                        </Link>
                       </p>
                       <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400 sm:hidden">
                         {song.artist} · {formatCount(realtimeViews)} views · {formatCount(realtimeLikes)} fav

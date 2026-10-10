@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import Link from 'next/link';
 import { Song } from '../types/chord';
 import { getSongTotalViews, getSongTotalLikes, formatCount } from '../utils/realtimeStats';
 import { Search, X, Heart, ChevronRight, FileQuestion, Eye, LayoutGrid, List } from 'lucide-react';
@@ -319,7 +320,9 @@ export const SongList: React.FC<SongListProps> = ({
 
                     {/* Judul Lagu */}
                     <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                      {song.title}
+                      <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                        {song.title}
+                      </Link>
                       {/* Mobile artist & stats indicator */}
                       <div className="flex sm:hidden items-center gap-2 text-xs font-normal text-slate-500 truncate mt-0.5">
                         <span>{song.artist}</span>

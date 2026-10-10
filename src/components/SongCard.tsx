@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Heart, Music, Sparkles, HardDriveDownload, Edit3, Trash2, Eye } from 'lucide-react';
 import { Song } from '../types/chord';
 import { isSongCachedOffline } from '../utils/offlineStorage';
@@ -44,7 +45,9 @@ export const SongCard: React.FC<SongCardProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {song.title}
+                <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                  {song.title}
+                </Link>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 font-medium">{song.artist}</p>
             </div>

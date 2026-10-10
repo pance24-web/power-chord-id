@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
+import Link from 'next/link';
 import { Search, X, Music, ChevronRight } from 'lucide-react';
 import { Song } from '../types/chord';
 
@@ -100,8 +101,9 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         <div className="max-h-80 overflow-y-auto p-2">
           {results.length > 0 ? (
             results.map((song) => (
-              <button
+              <Link
                 key={song.id}
+                href={`/chord/${song.id}`}
                 onClick={() => {
                   onSelectSong(song);
                   onClose();
@@ -127,7 +129,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                   )}
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-blue-600 transition-all" />
                 </div>
-              </button>
+              </Link>
             ))
           ) : (
             <div className="py-8 text-center text-xs text-slate-400">
