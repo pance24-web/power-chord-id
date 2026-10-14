@@ -715,6 +715,19 @@ export const SongViewer: React.FC<SongViewerProps> = ({
                 </button>
               </div>
 
+              <input
+                type="range"
+                min={-6}
+                max={6}
+                step={1}
+                value={transposeStep}
+                onChange={(e) => setTransposeStep(Number(e.target.value))}
+                className="hidden w-20 accent-blue-600 sm:block"
+                aria-label="Atur transpose dalam semitone"
+                aria-valuetext={`${transposeStep > 0 ? '+' : ''}${transposeStep} semitone`}
+                title="Geser untuk mengubah transpose hingga 6 semitone"
+              />
+
               {/* Transpose Reset Shortcut */}
               {transposeStep !== 0 && (
                 <button
