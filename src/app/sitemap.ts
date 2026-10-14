@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next';
 import { INITIAL_SONGS } from '../data/songs';
 import { SITE_URL } from '@/lib/site';
+import { getSongPath } from '@/lib/songUrl';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const songUrls: MetadataRoute.Sitemap = INITIAL_SONGS.map((song) => ({
-    url: `${SITE_URL}/chord/${encodeURIComponent(song.id)}`,
+    url: `${SITE_URL}${getSongPath(song)}`,
     lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 0.8,

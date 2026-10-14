@@ -1,3 +1,4 @@
+import { getSongPath } from '../lib/songUrl';
 import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { Song } from '../types/chord';
@@ -320,7 +321,7 @@ export const SongList: React.FC<SongListProps> = ({
 
                     {/* Judul Lagu */}
                     <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                      <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                      <Link href={getSongPath(song)} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
                         {song.title}
                       </Link>
                       {/* Mobile artist & stats indicator */}

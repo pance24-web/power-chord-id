@@ -1,3 +1,4 @@
+import { getSongPath } from '../lib/songUrl';
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Song } from '../types/chord';
@@ -214,7 +215,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </span>
                   <div className="min-w-0">
                     <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                      <Link href={getSongPath(song)} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
                         {song.title}
                       </Link>
                     </h3>

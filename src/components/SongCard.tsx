@@ -1,3 +1,4 @@
+import { getSongPath } from '../lib/songUrl';
 import React from 'react';
 import Link from 'next/link';
 import { Heart, Music, Sparkles, HardDriveDownload, Edit3, Trash2, Eye } from 'lucide-react';
@@ -45,7 +46,7 @@ export const SongCard: React.FC<SongCardProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                <Link href={`/chord/${song.id}`} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                <Link href={getSongPath(song)} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
                   {song.title}
                 </Link>
               </h3>

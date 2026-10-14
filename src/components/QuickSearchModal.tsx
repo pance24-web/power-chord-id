@@ -1,3 +1,4 @@
+import { getSongPath } from '../lib/songUrl';
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { Search, X, Music, ChevronRight } from 'lucide-react';
@@ -103,7 +104,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
             results.map((song) => (
               <Link
                 key={song.id}
-                href={`/chord/${song.id}`}
+                href={getSongPath(song)}
                 onClick={() => {
                   onSelectSong(song);
                   onClose();

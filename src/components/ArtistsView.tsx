@@ -1,3 +1,4 @@
+import { getSongPath } from '../lib/songUrl';
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { Song } from '../types/chord';
@@ -55,7 +56,7 @@ export const ArtistsView: React.FC<ArtistsViewProps> = ({ songs, onSelectSong })
               {artistSongs.map((song) => (
                 <Link
                   key={song.id}
-                  href={`/chord/${song.id}`}
+                  href={getSongPath(song)}
                   onClick={() => onSelectSong(song)}
                   className="w-full flex items-center justify-between p-2 rounded-xl text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer group"
                 >

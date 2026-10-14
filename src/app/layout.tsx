@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { SITE_URL } from '@/lib/site';
+import { PwaRegister } from '@/components/PwaRegister';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -41,6 +42,7 @@ export default function RootLayout({
       </head>
       <body className="bg-[#F8FAFC] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 min-h-screen antialiased selection:bg-blue-500/20 selection:text-blue-700 dark:selection:text-blue-300">
         {children}
+        <PwaRegister />
       </body>
     </html>
   );

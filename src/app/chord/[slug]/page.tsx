@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { INITIAL_SONGS } from '@/data/songs';
 import { SITE_URL } from '@/lib/site';
+import { getSongPath } from '@/lib/songUrl';
 import type { Song } from '@/types/chord';
 
 interface ChordPageProps {
@@ -14,7 +15,7 @@ function getSong(slug: string): Song | undefined {
 }
 
 function getSongUrl(song: Song): string {
-  return `${SITE_URL}/chord/${song.id}`;
+  return `${SITE_URL}${getSongPath(song)}`;
 }
 
 export function generateStaticParams() {
@@ -196,7 +197,7 @@ export default async function ChordPage({ params }: ChordPageProps) {
             {relatedSongs.map((relatedSong) => (
               <li key={relatedSong.id}>
                 <Link
-                  href={`/chord/${relatedSong.id}`}
+                  href={getSongPath(relatedSong)}
                   className="block rounded-lg bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900"
                 >
                   <span className="font-semibold">{relatedSong.title}</span>

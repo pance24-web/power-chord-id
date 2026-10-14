@@ -7,6 +7,7 @@ import { getChordData } from '../utils/chordDb';
 import { audioSynth } from '../utils/audioSynth';
 import { cacheViewedSong } from '../utils/offlineStorage';
 import { useSongRealtimeStats } from '../utils/realtimeStats';
+import { getSongPath } from '../lib/songUrl';
 import {
   ArrowLeft,
   Heart,
@@ -402,7 +403,7 @@ export const SongViewer: React.FC<SongViewerProps> = ({
   const handleShare = useCallback(async () => {
     const deepLinkUrl =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/?song=${encodeURIComponent(song.id)}`
+        ? `${window.location.origin}${getSongPath(song)}`
         : '';
     const shareData = {
       title: `${song.title} - ${song.artist} | PowerChord`,
