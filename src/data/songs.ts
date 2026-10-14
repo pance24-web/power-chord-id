@@ -766,4 +766,100 @@ Mati... Muda...
 C5 G5   D5 A5
 Mati... Muda...`,
   },
+  {
+    id: 'sesi-potret-enau-ari-lesmana',
+    title: 'Sesi Potret',
+    artist: 'eńau feat. Ari Lesmana',
+    originalKey: 'C',
+    capo: 0,
+    difficulty: 'Sedang',
+    genre: 'Pop',
+    tags: ['Pop', 'Indie'],
+    year: 2026,
+    chords: ['C', 'CMaj7', 'FMaj7', 'Fm', 'G', 'Em', 'Am', 'Dm', 'E/G#', 'D/F#'],
+    content: `[Intro]
+C CMaj7 FMaj7 Fm
+C CMaj7 FMaj7 Fm
+
+[Verse 1]
+FMaj7       G          C
+   Tahun lalu berjuta alasanku ...
+FMaj7        G               C
+   maaf tak bisa pulang penghasilanku pas-pasan
+FMaj7    G         C
+   kali ini sudah lumayan ...
+FMaj7       G       C                    Dm
+   berkat doamu diijabah Sang Maha Kaya..
+
+Dm         G   Em         Am
+ dan tahun ini .. ku bisa pulang..
+Dm     G            C
+ oleh-oleh sudah di tangan..
+Dm     G            E/G#           Am G
+ tapi anehnya bukan kau yang menyambutku..
+Dm         Em FMaj7                  G
+Ohh ternyata.. kau yang lebih dulu pulang..
+
+[Reff]
+C                    FMaj7
+Ku bertamu ke rumah barumu
+Em        Am
+Tak ada kamu
+      Dm          G
+Hanya papan dan namamu..
+C                   FMaj7
+Mana ocehan, wewangian khasmu
+      Em       Am
+Jarak ini terlalu jauh,
+      Dm        G
+kalau rindu aku tak mampu..
+ FMaj7          G         E/G#     Am
+Soal ikhlas ternyata aku masih amatir
+       Dm        Em  F             Fm       C
+Gengsi menyelimutiku, manusia ini kehilanganmu
+
+[Interlude]
+C D/F# FMaj7 Em
+G D Dm Fm C
+
+[Verse 2]
+FMaj7   G                C
+ Sesi potret yang selalu ku benci
+FMaj7   G             C
+ Aneh rasanya kau tak di sini
+FMaj7       G            C
+ Susunan barisannya tak sama lagi
+         Dm       Em  Fm
+Ooh... Satu... dua... tiga...
+                 G
+Ini nyata, kau telah pergi...
+
+[Reff]
+C                   FMaj7
+Ku bertamu ke rumah barumu
+Em        Am
+Tak ada kamu
+      Dm          G
+Hanya papan dan namamu..
+C                 FMaj7
+Mana ocehan, wewangian khasmu
+      Em       Am
+Jarak ini terlalu jauh,
+      Dm        G
+kalau rindu aku tak mampu..
+FMaj7     G            E/G#     Am
+Sesal hatiku tak sempat temani kamu..
+      Dm        G          C
+harusnya kubisikkan kata ajaib ke telingamu..
+FMaj7          G         E/G#     Am
+Soal ikhlas ternyata aku masih amatir
+       Dm
+masih sangat amatir..
+          Am
+Gengsi menyelimutiku..
+        F       G     C Fm C Fm
+manusia ini kehilanganmu ...
+C       Fm        C Fm
+Ke..hi..la..ngan..mu`,
+  },
 ];
