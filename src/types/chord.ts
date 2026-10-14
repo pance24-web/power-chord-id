@@ -1,15 +1,19 @@
 export type ThemeType = 'light' | 'dark' | 'amoled';
 
+export type InstrumentType = 'guitar' | 'ukulele' | 'piano';
+
 export interface ChordPosition {
   chord: string;
-  frets: (number | 'x')[]; // 6 strings from low E to high E: e.g. ['x', 3, 2, 0, 1, 0] for C
-  fingers?: (number | null)[]; // 1=index, 2=middle, 3=ring, 4=pinky
+  frets: (number | 'x')[]; // guitar: 6 strings, ukulele: 4 strings
+  fingers?: (number | null)[];
   barre?: {
     fret: number;
-    from: number; // string index 0-5
-    to: number;   // string index 0-5
+    from: number;
+    to: number;
   };
-  baseFret?: number; // Starting fret, default 1
+  baseFret?: number;
+  /** Piano: list of note names to highlight, e.g. ['C4', 'E4', 'G4'] */
+  pianoNotes?: string[];
 }
 
 export interface Song {
@@ -28,7 +32,7 @@ export interface Song {
   year?: number | string;
   youtubeId?: string;
   chords: string[];
-  content: string; // The lyrics and chord progression markup
+  content: string;
   isCustom?: boolean;
   createdAt?: string;
 }
@@ -50,4 +54,5 @@ export const STORAGE_KEYS = {
   OFFLINE_RECENT_SONGS: 'powerchord_offline_recent',
   SCROLL_SPEED: 'powerchord_scroll_speed',
   CHORD_REQUESTS: 'powerchord_chord_requests',
+  PREFERRED_INSTRUMENT: 'powerchord_preferred_instrument',
 } as const;
