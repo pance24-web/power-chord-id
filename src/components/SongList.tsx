@@ -34,6 +34,15 @@ const GENRE_OPTIONS = [
   'Jazz',
 ];
 
+const DIFFICULTY_OPTIONS = [
+  'Semua',
+  'Mudah',
+  'Sedang',
+  'Lanjutan',
+] as const;
+
+type DifficultyFilter = (typeof DIFFICULTY_OPTIONS)[number];
+
 export const SongList: React.FC<SongListProps> = ({
   songs,
   favorites,
@@ -48,6 +57,7 @@ export const SongList: React.FC<SongListProps> = ({
 }) => {
   const [search, setSearch] = useState(initialSearch);
   const [selectedGenre, setSelectedGenre] = useState<string>(initialGenre);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyFilter>('Semua');
   const [selectedLetter, setSelectedLetter] = useState<string>(initialLetter);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(filterFavoritesOnly);
@@ -101,13 +111,17 @@ export const SongList: React.FC<SongListProps> = ({
           song.genre?.toLowerCase() === selectedGenre.toLowerCase() ||
           song.tags?.some((t) => t.toLowerCase() === selectedGenre.toLowerCase());
 
+        const matchDifficulty =
+          selectedDifficulty === 'Semua' ||
+          song.difficulty === selectedDifficulty;
+
         const matchLetter =
           !selectedLetter ||
           song.title.trim().toUpperCase().startsWith(selectedLetter.toUpperCase());
 
         const matchFav = !showFavoritesOnly || favorites.includes(song.id);
 
-        return matchSearch && matchGenre && matchLetter && matchFav;
+        return matchSearch && matchGenre && matchDifficulty && matchLetter && matchFav;
       })
       .sort((a, b) => {
         if (sortBy === 'title') {
@@ -127,34 +141,53 @@ export const SongList: React.FC<SongListProps> = ({
         if (timeA !== timeB) return timeB - timeA;
         return 0;
       });
-  }, [songs, deferredSearch, searchIndex, selectedGenre, selectedLetter, showFavoritesOnly, favorites, sortBy, statsVersion]);
+  }, [
+    songs,
+    deferredSearch,
+    searchIndex,
+    selectedGenre,
+    selectedDifficulty,
+    selectedLetter,
+    showFavoritesOnly,
+    favorites,
+    sortBy,
+    statsVersion,
+  ]);
 
   const handleResetFilters = () => {
     setSearch('');
     setSelectedGenre('Semua');
+    setSelectedDifficulty('Semua');
     setSelectedLetter('');
     setShowFavoritesOnly(false);
   };
 
+  const hasActiveFilters =
+    search.trim() !== '' ||
+    selectedGenre !== 'Semua' ||
+    selectedDifficulty !== 'Semua' ||
+    selectedLetter !== '' ||
+    showFavoritesOnly;
+
   return (
     <div className="space-y-6 pb-20">
-      {/* Header (Mockup Screen 2) */}
+      {/* Header */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
           Katalog Chord
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Jelajahi semua lagu berdasarkan genre dan huruf awal.
+          Jelajahi semua lagu berdasarkan genre, tingkat kesulitan, dan huruf awal.
         </p>
       </div>
 
-      {/* Search Input with Blue Search Button (Mockup Screen 2) */}
+      {/* Search Input */}
       <div className="relative flex items-center">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari lagu atau nama artis..."
+          placeholder="Cari lagu, artis, atau chord..."
           className="w-full pl-4 pr-20 sm:pr-24 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 shadow-2xs"
         />
         <div className="absolute right-2 flex items-center gap-1">
@@ -178,7 +211,7 @@ export const SongList: React.FC<SongListProps> = ({
         </div>
       </div>
 
-      {/* Filter Row: Genre dropdown, Urutkan dropdown, and Total count */}
+      {/* Filter Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Genre Dropdown */}
@@ -197,9 +230,25 @@ export const SongList: React.FC<SongListProps> = ({
             </select>
           </div>
 
+          {/* Difficulty Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-600 dark:text-slate-400">Tingkat</span>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyFilter)}
+              className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-bold text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-2xs"
+            >
+              {DIFFICULTY_OPTIONS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-600 dark:text-slate-400">Urutkan:</span>
+            <span className="font-semibold text-slate-600 dark:text-slate-400">Urutkan</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -224,6 +273,16 @@ export const SongList: React.FC<SongListProps> = ({
             <Heart className={`w-3.5 h-3.5 ${showFavoritesOnly ? 'fill-current text-rose-500' : ''}`} />
             <span>Favorit ({favorites.length})</span>
           </button>
+
+          {/* Reset filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="px-3 py-2 rounded-xl font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors cursor-pointer"
+            >
+              Reset filter
+            </button>
+          )}
         </div>
 
         {/* Right side: View Mode Toggle & Total count */}
@@ -254,21 +313,40 @@ export const SongList: React.FC<SongListProps> = ({
           </div>
 
           <span className="text-slate-400 dark:text-slate-500 font-medium">
-            Total: {filteredSongs.length > 0 ? `${filteredSongs.length + 2448} lagu` : '0 lagu'}
+            Total: {filteredSongs.length > 0 ? `${filteredSongs.length} lagu` : '0 lagu'}
           </span>
         </div>
       </div>
 
-      {/* Letter filter banner if active */}
-      {selectedLetter && (
-        <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-xl text-xs text-blue-600 dark:text-blue-400">
-          <span>Menampilkan lagu berawalan huruf <strong>&quot;{selectedLetter}&quot;</strong></span>
-          <button
-            onClick={() => setSelectedLetter('')}
-            className="hover:underline font-bold cursor-pointer"
-          >
-            Hapus filter
-          </button>
+      {/* Active filters banner */}
+      {(selectedLetter || selectedDifficulty !== 'Semua') && (
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedLetter && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-xl text-xs text-blue-600 dark:text-blue-400">
+              <span>
+                Huruf <strong>"{selectedLetter}"</strong>
+              </span>
+              <button
+                onClick={() => setSelectedLetter('')}
+                className="hover:underline font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {selectedDifficulty !== 'Semua' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl text-xs text-amber-700 dark:text-amber-400">
+              <span>
+                Tingkat <strong>{selectedDifficulty}</strong>
+              </span>
+              <button
+                onClick={() => setSelectedDifficulty('Semua')}
+                className="hover:underline font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -294,12 +372,13 @@ export const SongList: React.FC<SongListProps> = ({
             {/* Table Header (Desktop) */}
             <div className="hidden sm:grid grid-cols-12 px-5 py-3 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               <div className="col-span-1">#</div>
-              <div className="col-span-4">Judul Lagu</div>
-              <div className="col-span-3">Artis</div>
+              <div className="col-span-3">Judul Lagu</div>
+              <div className="col-span-2">Artis</div>
               <div className="col-span-1">Genre</div>
+              <div className="col-span-1">Tingkat</div>
               <div className="col-span-1">Tayangan</div>
               <div className="col-span-1">Favorit</div>
-              <div className="col-span-1 text-right">Aksi</div>
+              <div className="col-span-2 text-right">Aksi</div>
             </div>
 
             {/* Table Rows */}
@@ -320,28 +399,32 @@ export const SongList: React.FC<SongListProps> = ({
                     </div>
 
                     {/* Judul Lagu */}
-                    <div className="col-span-4 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                      <Link href={getSongPath(song)} className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                    <div className="col-span-3 font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                      <Link
+                        href={getSongPath(song)}
+                        className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm"
+                      >
                         {song.title}
                       </Link>
-                      {/* Mobile artist & stats indicator */}
+                      {/* Mobile artist & stats */}
                       <div className="flex sm:hidden items-center gap-2 text-xs font-normal text-slate-500 truncate mt-0.5">
                         <span>{song.artist}</span>
+                        {song.difficulty && (
+                          <>
+                            <span>•</span>
+                            <span className="text-amber-600 dark:text-amber-400">{song.difficulty}</span>
+                          </>
+                        )}
                         <span>•</span>
                         <span className="flex items-center gap-1 text-[11px] text-slate-400">
                           <Eye className="w-3 h-3 text-blue-500" />
                           <span>{formatCount(realtimeViews)}</span>
                         </span>
-                        <span>•</span>
-                        <span className={`flex items-center gap-1 text-[11px] ${isFav ? 'text-rose-500 font-semibold' : 'text-slate-400'}`}>
-                          <Heart className={`w-3 h-3 ${isFav ? 'fill-current text-rose-500' : ''}`} />
-                          <span>{formatCount(realtimeLikes)}</span>
-                        </span>
                       </div>
                     </div>
 
                     {/* Artis (Desktop) */}
-                    <div className="hidden sm:block col-span-3 text-xs text-slate-600 dark:text-slate-400 truncate">
+                    <div className="hidden sm:block col-span-2 text-xs text-slate-600 dark:text-slate-400 truncate">
                       {song.artist}
                     </div>
 
@@ -350,6 +433,23 @@ export const SongList: React.FC<SongListProps> = ({
                       {song.genre && (
                         <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
                           {song.genre}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Difficulty */}
+                    <div className="hidden sm:block col-span-1 shrink-0">
+                      {song.difficulty && (
+                        <span
+                          className={`px-2 py-0.5 text-[11px] font-semibold rounded-md border ${
+                            song.difficulty === 'Mudah'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50'
+                              : song.difficulty === 'Sedang'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50'
+                                : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'
+                          }`}
+                        >
+                          {song.difficulty}
                         </span>
                       )}
                     </div>
@@ -368,8 +468,8 @@ export const SongList: React.FC<SongListProps> = ({
                       </span>
                     </div>
 
-                    {/* Actions: Heart + Chevron */}
-                    <div className="col-span-1 flex items-center justify-end gap-1 shrink-0">
+                    {/* Actions */}
+                    <div className="col-span-2 flex items-center justify-end gap-1 shrink-0">
                       <button
                         onClick={(e) => onToggleFavorite(e, song.id)}
                         className={`p-1.5 rounded-full transition-colors cursor-pointer ${
@@ -391,24 +491,22 @@ export const SongList: React.FC<SongListProps> = ({
           </div>
         )
       ) : (
-        /* Empty State / Not Found (Mockup Screen 8: Responsif - Detail Lagu (Mobile) / State Kosong) */
+        /* Empty State */
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center max-w-md mx-auto space-y-4 shadow-2xs">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center">
             <FileQuestion className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Lagu tidak ditemukan
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Lagu tidak ditemukan</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-              Coba cari dengan kata kunci lain atau pilih genre yang berbeda.
+              Coba cari dengan kata kunci lain, atau ubah filter genre / tingkat kesulitan.
             </p>
           </div>
           <button
             onClick={handleResetFilters}
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
           >
-            Kembali ke Katalog
+            Reset semua filter
           </button>
         </div>
       )}
