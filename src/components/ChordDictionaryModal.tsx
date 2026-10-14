@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, BookOpen } from 'lucide-react';
-import { CHORD_DATABASE, getChordData } from '../utils/chordDb';
+import { X, Search, BookOpen, Guitar, Music2, Piano } from 'lucide-react';
+import { getChordData, getAvailableChords } from '../utils/chordDb';
 import { ChordDiagram } from './ChordDiagram';
+import { InstrumentType, STORAGE_KEYS } from '../types/chord';
 
 interface ChordDictionaryModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const INSTRUMENTS: { id: InstrumentType; label: string; icon: React.ReactNode }[] = [
+  { id: 'guitar', label: 'Gitar', icon: <Guitar className="w-3.5 h-3.5" /> },
+  { id: 'ukulele', label: 'Ukulele', icon: <Music2 className="w-3.5 h-3.5" /> },
+  { id: 'piano', label: 'Piano', icon: <Piano className="w-3.5 h-3.5" /> },
+];
 
 export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
   isOpen,
@@ -14,9 +21,18 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [selectedRoot, setSelectedRoot] = useState<string>('All');
+  const [instrument, setInstrument] = useState<InstrumentType>('guitar');
 
   useEffect(() => {
     if (!isOpen) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PREFERRED_INSTRUMENT) as InstrumentType | null;
+      if (saved && ['guitar', 'ukulele', 'piano'].includes(saved)) {
+        setInstrument(saved);
+      }
+    } catch {
+      /* ignore */
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -24,11 +40,19 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const handleInstrumentChange = (id: InstrumentType) => {
+    setInstrument(id);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PREFERRED_INSTRUMENT, id);
+    } catch {
+      /* ignore */
+    }
+  };
+
   if (!isOpen) return null;
 
   const roots = ['All', 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-
-  const allChords = Object.keys(CHORD_DATABASE);
+  const allChords = getAvailableChords(instrument);
 
   const filteredChords = allChords.filter((c) => {
     const matchesSearch = c.toLowerCase().includes(search.toLowerCase());
@@ -41,6 +65,9 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
 
     return matchesSearch && matchesRoot;
   });
+
+  const instrumentLabel =
+    instrument === 'guitar' ? 'Gitar' : instrument === 'ukulele' ? 'Ukulele' : 'Piano';
 
   return (
     <div
@@ -58,8 +85,12 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Kamus Kunci Gitar</h2>
-              <p className="text-xs text-slate-500">Kumpulan diagram chord gitar lengkap dengan fingering &amp; audio</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Kamus Kunci {instrumentLabel}
+              </h2>
+              <p className="text-xs text-slate-500">
+                Diagram chord interaktif — gitar, ukulele & piano
+              </p>
             </div>
           </div>
           <button
@@ -70,8 +101,26 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
           </button>
         </div>
 
-        {/* Search & Root Filter */}
+        {/* Instrument Tabs + Search & Root Filter */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3 bg-slate-50/50 dark:bg-slate-900/50">
+          {/* Instrument switcher */}
+          <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 w-fit">
+            {INSTRUMENTS.map((inst) => (
+              <button
+                key={inst.id}
+                onClick={() => handleInstrumentChange(inst.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  instrument === inst.id
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {inst.icon}
+                <span>{inst.label}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -105,21 +154,27 @@ export const ChordDictionaryModal: React.FC<ChordDictionaryModalProps> = ({
           {filteredChords.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filteredChords.map((chordName) => {
-                const pos = getChordData(chordName);
+                const pos = getChordData(chordName, instrument);
                 if (!pos) return null;
                 return (
                   <div
-                    key={chordName}
+                    key={`${instrument}-${chordName}`}
                     className="p-3 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center hover:border-blue-400 transition-colors"
                   >
-                    <ChordDiagram chord={pos} chordName={chordName} size="sm" showSoundButton={true} />
+                    <ChordDiagram
+                      chord={pos}
+                      chordName={chordName}
+                      size="sm"
+                      showSoundButton={true}
+                      instrument={instrument}
+                    />
                   </div>
                 );
               })}
             </div>
           ) : (
             <div className="py-12 text-center text-xs text-slate-400">
-              Tidak ada akor yang cocok dengan &quot;{search}&quot;.
+              Tidak ada akor yang cocok dengan "{search}".
             </div>
           )}
         </div>
